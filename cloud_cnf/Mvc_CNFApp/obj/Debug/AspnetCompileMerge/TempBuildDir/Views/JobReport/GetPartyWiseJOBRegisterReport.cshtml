@@ -1,0 +1,506 @@
+﻿@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.CNF_JOB
+
+@{
+    Layout = null;
+
+    var LoggedCompId = Model.COMPID;
+    Int64 compid = Convert.ToInt64(LoggedCompId);
+
+
+    string companyName = "", address = "", contactNo = "";
+    CnfDbContext db = new CnfDbContext();
+    var SelectCompanyName = from n in db.AslCompanyDbSet
+
+                            where n.COMPID == compid
+                            select new { n.COMPNM, n.ADDRESS, n.CONTACTNO };
+
+    foreach (var n in SelectCompanyName)
+    {
+        companyName = n.COMPNM;
+        address = n.ADDRESS;
+        contactNo = n.CONTACTNO;
+    }
+    var compNm = companyName;
+    var Address = address;
+    var contactno = contactNo;
+
+
+
+    var partyId = Model.PARTYID;
+    var jobYear = Model.JOBYY;
+
+    var SearchPartyName = from m in db.GlAcchartDbSet where m.ACCOUNTCD == partyId && compid == m.COMPID select new { m.ACCOUNTNM };
+    string PartyName = "";
+    foreach (var x in SearchPartyName)
+    {
+        PartyName = x.ACCOUNTNM;
+    }
+
+
+    TimeZoneInfo timeZoneInfo;
+    timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Central Asia Standard Time");
+    DateTime currentDateTime = TimeZoneInfo.ConvertTime(DateTime.Now, timeZoneInfo);
+}
+
+
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <link href="~/Content/reportcss/style.css" rel="stylesheet" />
+    @*
+        <script type="text/javascript">
+                function ClosePrint() {
+                    var print = document.getElementById("print");
+                    print.style.visibility = "hidden";
+                    //            print.display = false;
+
+                    window.print();
+                }
+        </script>*@
+
+</head>
+
+<body style=" background-color:#fafafa;">
+    @*<input id="print" tabindex="1" type="button" value="Print" onclick="ClosePrint()" />*@
+    <div style="margin: 0px auto; border: 1px solid #d3d3d3; border-radius: 5px; box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); background: none repeat scroll 0 0 white;">
+        <table id="mainTable" border="0" width="100%">
+            <thead>
+                <tr>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+
+
+                </tr>
+                <tr style="background-color: #00689b">
+                    <td colspan="13">
+                        <h3 style="color: white;padding:4px">@compNm</h3>
+                        <p style="color:white;padding-left:4px">@Address<span>  @contactno</span></p>
+                    </td>
+
+                    <td colspan="7" style="color: white;padding:8px" align="right">
+                        Powered By<br />Alchemy Software
+                    </td>
+
+                </tr>
+                <tr>
+                    <td colspan="13" align="left" style="padding: 4px; font-weight: bold">Party Wise Job Register</td>
+                    <td align="right" colspan="7" style="padding:8px">Print:@currentDateTime.ToString("dd-MM-yy hh:mm tt")</td>
+                </tr>
+                <tr style="outline: thin solid">
+                    <td colspan="8" style="padding:4px;font-weight:bold">Party Name : <span style="font-weight: bold">@PartyName</span></td>
+
+                    <td colspan="4" align="right" style="font-weight:bold">Job Year : <span style="font-weight:bold">@jobYear</span> </td>
+                    <td colspan="4" style="font-weight: bold"></td>
+                    <td colspan="4"></td>
+
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    var JobType_Export_List = (from n in db.CnfJobDbSet where n.COMPID == compid && n.JOBYY == jobYear && n.PARTYID == partyId && n.JOBTP == "EXPORT" select n).ToList();
+                    string export = "";
+                    foreach (var x in JobType_Export_List)
+                    {
+                        export = x.JOBTP;
+                    }
+
+                }
+                @if (JobType_Export_List.Count != 0)
+                {
+                    <tr>
+                        <td colspan="8" style="font-weight:bold;padding:4px">Job Type : <span style="font-weight:bold">@export</span> </td>
+
+                        <td colspan="12"></td>
+                    </tr>
+                    <tr style="background-color: #00689b; outline: thin solid">
+                        <td colspan="1" style="color: white; padding: 2px;font-size: small" align="center">Job No</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Job Date</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Reg Id</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">B/L NO</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">B/L Date</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">LCA NO</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Item Name</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Weight</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Carton</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">CBM</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Container</td>
+                    
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Permit No</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Permit Date</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Invoice No</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Invoice Date</td>
+                        @*<td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Doc Received Date</td>*@
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Update Status of Docs</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">ETA Date</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Delivery Date</td>
+                        <td colspan="2" style="color: white; padding: 2px; font-size: small" align="center">LC No</td>
+                    </tr>
+                    foreach (var item in JobType_Export_List)
+                    {
+                        <tr style="outline:thin solid">
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @Html.DisplayFor(modelItem => item.JOBNO)
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @{
+                        string jobcdt = item.JOBCDT.ToString();
+                        DateTime MyDateTime_jobcdt = DateTime.Parse(jobcdt);
+                        string JOBCDT = MyDateTime_jobcdt.ToString("dd-MMM-yyyy");
+                        @JOBCDT
+                                }
+
+                            </td>
+
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @Html.DisplayFor(modelItem => item.REGID)
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @Html.DisplayFor(modelItem => item.BLNO)
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @{
+                                    if (item.BLDT != null)
+                                    {
+                                        string bldt = item.BLDT.ToString();
+                                        DateTime BLdt = DateTime.Parse(bldt);
+                                        string BLDT = BLdt.ToString("dd-MMM-yyyy");
+                                        @BLDT
+                                    }
+
+                                }
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @Html.DisplayFor(modelItem => item.LCANO)
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @Html.DisplayFor(modelItem => item.GOODS)
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @Html.DisplayFor(modelItem => item.WTGROSS)
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @Html.DisplayFor(modelItem => item.PKGS)
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                               
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @Html.DisplayFor(modelItem => item.CONTNO)
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @Html.DisplayFor(modelItem => item.PERMITNO)
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @{
+                                    if (item.PERMITDT != null)
+                                    {
+                                          string permitdt = item.PERMITDT.ToString();
+                        DateTime MyDateTime_permitdt = DateTime.Parse(permitdt);
+                        string PERMITDT = MyDateTime_permitdt.ToString("dd-MMM-yyyy");
+                        @PERMITDT
+                                    }     
+                      
+                                }
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @Html.DisplayFor(modelItem => item.DOCINVNO)
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @{
+                                    if (item.DOCINVDT != null)
+                                    {
+                                        string docinvdt = item.DOCINVDT.ToString();
+                                        DateTime MyDateTime_docinvdt = DateTime.Parse(docinvdt);
+                                        string DOCINVDT = MyDateTime_docinvdt.ToString("dd-MMM-yyyy");
+                                        @DOCINVDT
+                                    }
+                      
+                                }
+                            </td>
+                            @*<td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @{
+                                    if (item.DOCINVDT != null)
+                                    {
+                                        string docinvdt = item.DOCINVDT.ToString();
+                                        DateTime MyDateTime_docinvdt = DateTime.Parse(docinvdt);
+                                        string DOCINVDT = MyDateTime_docinvdt.ToString("dd-MMM-yyyy");
+                                        @DOCINVDT
+                                    }
+
+                                }
+                            </td>*@
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @{
+                                    string ARRIVEDT = "";
+                                    string DELIVERYDT = "";
+                        if (item.ARRIVEDT != null)
+                        {
+                            string arrival = item.ARRIVEDT.ToString();
+                            DateTime shipmentarrival = DateTime.Parse(arrival);
+                            ARRIVEDT = shipmentarrival.ToString("dd-MMM-yyyy");
+
+                        }
+                        if (item.DELIVERYDT != null)
+                        {
+                            string delivery = item.DELIVERYDT.ToString();
+                            DateTime shipmentdelivery = DateTime.Parse(delivery);
+                            DELIVERYDT = shipmentdelivery.ToString("dd-MMM-yyyy");
+
+                        }
+
+                                }
+                                Arrival : @ARRIVEDT
+                                Delivery : @DELIVERYDT
+                            </td>
+
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @{
+                        if (item.ETB != null)
+                        {
+                            string etb = item.ETB.ToString();
+                            DateTime MyDateTime_etb = DateTime.Parse(etb);
+                            string ETB = MyDateTime_etb.ToString("dd-MMM-yyyy");
+                            @ETB
+                        }
+
+                                }
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @{
+                        if (item.DELIVERYDT != null)
+                        {
+                            string delivery = item.DELIVERYDT.ToString();
+                            DateTime shipmentdelivery = DateTime.Parse(delivery);
+                            DELIVERYDT = shipmentdelivery.ToString("dd-MMM-yyyy");
+                            @DELIVERYDT
+                        }
+
+                                }
+                            </td>
+                            <td colspan="2" style="color: black; padding: 2px; font-size: small" align="center">
+                                @Html.DisplayFor(modelItem => item.LCNO)
+                                </td>
+</tr>
+                    }
+                }
+                @{
+                    var JobType_Import_List = (from n in db.CnfJobDbSet where n.COMPID == compid && n.JOBYY == jobYear && n.PARTYID == partyId && n.JOBTP == "IMPORT" select n).ToList();
+
+                    string import = "";
+                    foreach (var y in JobType_Import_List)
+                    {
+                        import = y.JOBTP;
+                    }
+
+                }
+                @if (JobType_Import_List.Count != 0)
+                {
+                    <tr>
+                        <td colspan="8" style="font-weight:bold;padding:4px">Job Type : <span style="font-weight:bold">@import</span> </td>
+
+                        <td colspan="12"></td>
+                    </tr>
+                    <tr style="background-color: #00689b; outline: thin solid">
+                        <td colspan="1" style="color: white; padding: 2px;font-size: small" align="center">Job No</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Job Date</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Reg Id</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">B/L NO</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">B/L Date</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">LCA NO</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Item Name</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Weight</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Carton</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">CBM</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Container</td>
+
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Permit No</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Permit Date</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Invoice No</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Invoice Date</td>
+                        @*<td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Doc Received Date</td>*@
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Update Status of Docs</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">ETA Date</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">Delivery Date</td>
+                        <td colspan="1" style="color: white; padding: 2px; font-size: small" align="center">LC No</td>
+                    </tr>
+                    foreach (var item in JobType_Import_List)
+                    {
+                      <tr style="outline:thin solid">
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @Html.DisplayFor(modelItem => item.JOBNO)
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @{
+                        string jobcdt = item.JOBCDT.ToString();
+                        DateTime MyDateTime_jobcdt = DateTime.Parse(jobcdt);
+                        string JOBCDT = MyDateTime_jobcdt.ToString("dd-MMM-yyyy");
+                        @JOBCDT
+                                }
+
+                            </td>
+
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @Html.DisplayFor(modelItem => item.REGID)
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @Html.DisplayFor(modelItem => item.BLNO)
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @{
+                                    if (item.BLDT != null)
+                                    {
+                                        string bldt = item.BLDT.ToString();
+                                        DateTime BLdt = DateTime.Parse(bldt);
+                                        string BLDT = BLdt.ToString("dd-MMM-yyyy");
+                                        @BLDT
+                                    }
+
+                                }
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @Html.DisplayFor(modelItem => item.LCANO)
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @Html.DisplayFor(modelItem => item.GOODS)
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @Html.DisplayFor(modelItem => item.WTGROSS)
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @Html.DisplayFor(modelItem => item.PKGS)
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                               
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @Html.DisplayFor(modelItem => item.CONTNO)
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @Html.DisplayFor(modelItem => item.PERMITNO)
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @{
+                                    if (item.PERMITDT != null)
+                                    {
+                                          string permitdt = item.PERMITDT.ToString();
+                        DateTime MyDateTime_permitdt = DateTime.Parse(permitdt);
+                        string PERMITDT = MyDateTime_permitdt.ToString("dd-MMM-yyyy");
+                        @PERMITDT
+                                    }     
+                      
+                                }
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @Html.DisplayFor(modelItem => item.DOCINVNO)
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @{
+                                    if (item.DOCINVDT != null)
+                                    {
+                                        string docinvdt = item.DOCINVDT.ToString();
+                                        DateTime MyDateTime_docinvdt = DateTime.Parse(docinvdt);
+                                        string DOCINVDT = MyDateTime_docinvdt.ToString("dd-MMM-yyyy");
+                                        @DOCINVDT
+                                    }
+                      
+                                }
+                            </td>
+                            @*<td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @{
+                                    if (item.DOCINVDT != null)
+                                    {
+                                        string docinvdt = item.DOCINVDT.ToString();
+                                        DateTime MyDateTime_docinvdt = DateTime.Parse(docinvdt);
+                                        string DOCINVDT = MyDateTime_docinvdt.ToString("dd-MMM-yyyy");
+                                        @DOCINVDT
+                                    }
+
+                                }
+                            </td>*@
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @{
+                                    string ARRIVEDT = "";
+                                    string DELIVERYDT = "";
+                        if (item.ARRIVEDT != null)
+                        {
+                            string arrival = item.ARRIVEDT.ToString();
+                            DateTime shipmentarrival = DateTime.Parse(arrival);
+                            ARRIVEDT = shipmentarrival.ToString("dd-MMM-yyyy");
+
+                        }
+                        if (item.DELIVERYDT != null)
+                        {
+                            string delivery = item.DELIVERYDT.ToString();
+                            DateTime shipmentdelivery = DateTime.Parse(delivery);
+                            DELIVERYDT = shipmentdelivery.ToString("dd-MMM-yyyy");
+
+                        }
+
+                                }
+                                Arrival : @ARRIVEDT
+                                Delivery : @DELIVERYDT
+                            </td>
+
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @{
+                        if (item.ETB != null)
+                        {
+                            string etb = item.ETB.ToString();
+                            DateTime MyDateTime_etb = DateTime.Parse(etb);
+                            string ETB = MyDateTime_etb.ToString("dd-MMM-yyyy");
+                            @ETB
+                        }
+
+                                }
+                            </td>
+                            <td colspan="1" style="color: black; padding: 2px; font-size: small" align="center">
+                                @{
+                        if (item.DELIVERYDT != null)
+                        {
+                            string delivery = item.DELIVERYDT.ToString();
+                            DateTime shipmentdelivery = DateTime.Parse(delivery);
+                            DELIVERYDT = shipmentdelivery.ToString("dd-MMM-yyyy");
+                            @DELIVERYDT
+                        }
+
+                                }
+                            </td>
+
+                          <td colspan="2" style="color: black; padding: 2px; font-size: small" align="center">
+                              @Html.DisplayFor(modelItem => item.LCNO)
+                          </td>
+                        </tr>
+                     
+                    }
+                }
+            </tbody>
+        </table>
+
+
+        </div>
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,277 @@
+﻿@using System.ServiceModel
+@using Mvc_CNFApp.Models
+@model IEnumerable<Mvc_CNFApp.Models.CNF_JOBEXPMST>
+@{
+    ViewBag.Title = "GetExpenseVouchar";
+    Layout = null;
+    if (HttpContext.Current.Session["LoggedUserType"] == null)
+    {
+        Response.Redirect(Url.Action("Index", "Login"));
+    }
+
+    var LoggedCompId = HttpContext.Current.Session["loggedCompID"].ToString();
+    Int64 compid = Convert.ToInt64(LoggedCompId);
+
+
+    string companyName = "", address = "",contactNo="";
+    CnfDbContext db = new CnfDbContext();
+    var SelectCompanyName = from n in db.AslCompanyDbSet
+
+                            where n.COMPID == compid
+                            select new { n.COMPNM, n.ADDRESS,n.CONTACTNO };
+
+    foreach (var n in SelectCompanyName)
+    {
+        companyName = n.COMPNM;
+        address = n.ADDRESS;
+        contactNo = n.CONTACTNO;
+    }
+
+    var compNm = companyName;
+    var Address = address;
+    var contactno = contactNo;
+
+
+    var transNo = Model.Select(z => z.TRANSNO).Take(1).ToArray();
+    Int64 TransNo = Convert.ToInt64(transNo[0]);
+
+    var transDate = Model.Select(z => z.TRANSDT).Take(1).ToArray();
+    //string TransDate = Convert.ToString(transDate);
+    DateTime date = Convert.ToDateTime(transDate[0]);
+
+
+
+    var JobNo = Model.Select(z => z.JOBNO).Take(1).ToArray();
+    Int64 jobNo = Convert.ToInt64(JobNo[0]);
+
+    var JobYear = Model.Select(z => z.JOBYY).Take(1).ToArray();
+    Int64 jobyear = Convert.ToInt64(JobYear[0]);
+
+    var expcd = Model.Select(z => z.EXPCD).Take(1).ToArray();
+    Int64 Expcd = Convert.ToInt64(expcd[0]);
+
+    var selectExpmstinfo = from n in db.CnfJobexpmstDbSet
+                           where n.COMPID == compid && n.TRANSDT == date && n.JOBNO == jobNo && n.TRANSNO == TransNo
+                           select new { n.TRANSDT, n.JOBNO, n.TRANSNO, n.JOBYY, n.JOBTP };
+    string jobno = "", TRansno = "", date1 = "", JObyear = "", JobType = "";
+    foreach (var n in selectExpmstinfo)
+    {
+        date1 = Convert.ToString(n.TRANSDT);
+        jobno = Convert.ToString(n.JOBNO);
+        TRansno = Convert.ToString(n.TRANSNO);
+        JObyear = Convert.ToString(n.JOBYY);
+        JobType = Convert.ToString(n.JOBTP);
+
+    }
+
+    DateTime dd = DateTime.Parse(date1);
+    string ddt = dd.ToString("dd-MMM-yyyy");
+
+
+
+    var JOBNO = jobno;
+    var TRANSDT = ddt;
+    var TRANSNO = TRansno;
+    var JOBYEAR = JObyear;
+    var JOBTYPE = JobType;
+
+    string AccountName = "";
+    var res1 = from m in db.GlAcchartDbSet where m.COMPID == compid && m.ACCOUNTCD == Expcd select new { m.ACCOUNTNM };
+    foreach (var a in res1)
+    {
+        AccountName = a.ACCOUNTNM;
+    }
+
+
+    var ExpenseBY = AccountName;
+    List<CNF_JOBEXP> data = new List<CNF_JOBEXP>();
+    data = db.CnfJobexpDbSet.Where(e => e.COMPID == compid && e.EXPCD == Expcd && e.TRANSNO==TransNo).ToList();
+
+
+    TimeZoneInfo timeZoneInfo;
+    timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Central Asia Standard Time");
+    DateTime currentDateTime = TimeZoneInfo.ConvertTime(DateTime.Now, timeZoneInfo);
+
+    Decimal totalAmount = 0;
+    string amount = "";
+    string AmtConv = "";
+}
+
+
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <link href="~/Content/reportcss/style.css" rel="stylesheet" />
+    @*<script type="text/javascript">
+            function ClosePrint() {
+                var print = document.getElementById("print");
+                print.style.visibility = "hidden";
+                //            print.display = false;
+
+                window.print();
+            }
+        </script>*@
+
+</head>
+
+
+<body style=" background-color:#fafafa;">
+    <div style="width: 400px; margin: 0px auto; border: 1px solid #d3d3d3; border-radius: 5px; box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); background: none repeat scroll 0 0 white;">
+        <table id="mainTable" border="0" width="100%">
+            <thead>
+                <tr>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="10%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+
+                </tr>
+                <tr style="background-color: #00689b">
+                    <td colspan="12">
+                        <h3 style="color: white;padding:4px">@compNm</h3>
+                        <p style="color:white;padding-left:4px">@Address <br /> @contactno</p>
+                    </td>
+
+                    <td colspan="6" style="color: white;padding:8px" align="right">
+                        Powered By<br />Alchemy Software
+                    </td>
+
+                </tr>
+
+                <tr>
+                    <td colspan="12" align="left" style="padding: 4px; font-weight: bold">Expense Voucher</td>
+                    <td align="right" colspan="6" style="padding:8px">Print:@currentDateTime.ToString("dd-MM-yy hh:mm tt")</td>
+                </tr>
+                <tr style="outline: thin solid">
+                    <td colspan="5" style="padding:4px;font-weight:bold">Date : <span style="font-weight: bold">@TRANSDT</span></td>
+                    <td colspan="5" style="font-weight: bold"> Invoice No : <span style="font-weight:bold">@TRANSNO</span></td>
+
+                    <td colspan="8" align="left" style="font-weight:bold">Job No : <span style="font-weight:bold">@JOBNO | @JOBYEAR | @JOBTYPE</span> </td>
+
+
+                </tr>
+                @{
+                    var partyId = from m in db.CnfJobDbSet where m.COMPID == compid && m.JOBNO == jobNo && m.JOBYY == jobyear select new { m.PARTYID };
+                    Int64 partyid = 0;
+                    foreach (var a in partyId)
+                    {
+                        partyid = Convert.ToInt64(a.PARTYID);
+                    }
+                    Int64 PartyID = Convert.ToInt64(partyid);
+                    var respartyname = (from n in db.GlAcchartDbSet where n.COMPID == compid select n).ToList();
+
+                }
+                <tr style="outline: thin solid">
+                    <td colspan="9" style="padding:4px;font-weight:bold">
+                        Party : <span style="font-weight: bold">
+                            @foreach (var x in respartyname)
+                            {
+                                if (x.ACCOUNTCD == PartyID && x.ACCOUNTCD != null)
+                                {
+                                    @Html.DisplayFor(modelItem => x.ACCOUNTNM)
+                                }
+                            }
+
+                        </span>
+                    </td>
+                    <td colspan="9" style="font-weight: bold"> Expense By : <span style="font-weight:bold">@ExpenseBY</span></td>
+
+
+                </tr>
+                <tr style="background-color: #00689b; outline: thin solid">
+
+                    <td colspan="2" style="color: white; padding: 4px" align="center">SL</td>
+                    <td colspan="5" style="color: white; padding: 4px" align="center">Particulars</td>
+                    <td colspan="5" style="color: white; padding: 4px" align="center">Amount</td>
+                    <td colspan="6" style="color: white; padding: 4px" align="center">Remarks</td>
+
+                </tr>
+
+
+
+            </thead>
+            <tbody>
+                @{
+                    var resexpname = (from n in db.CnfExpenseDbSet where n.COMPID == compid select n).ToList();
+
+                }
+                @foreach (var item in data)
+                {
+                    <tr style="outline:thin solid">
+                        <td colspan="2" align="center">
+                            @Html.DisplayFor(modelItem => item.EXPSL)
+                        </td>
+
+                        <td colspan="5" align="center">
+                            @foreach (var x in resexpname)
+                            {
+                                if (x.EXPID == item.EXPID && item.EXPID != null)
+                                {
+                                    @Html.DisplayFor(modelItem => x.EXPNM)
+                                }
+                            }
+                        </td>
+                        <td colspan="5" align="right">
+                            @Html.DisplayFor(modelItem => item.EXPAMT)
+                        </td>
+                        <td colspan="6" align="center">
+                            @Html.DisplayFor(modelItem => item.REMARKS)
+                        </td>
+
+                    </tr>
+                            totalAmount = totalAmount + Convert.ToDecimal(item.EXPAMT);
+                }
+                <tr>
+
+                    <td colspan="7" align="right" style="font-weight:bold">
+                        Total:
+                    </td>
+                    <td colspan="5" align="right" style="font-weight:bold">
+                        @totalAmount
+                    </td>
+                    <td colspan="6"></td>
+                </tr>
+                <tr>
+                    @{
+                        amount = Convert.ToString(@totalAmount);
+                        AmtConv = SpellAmount.MoneyConvFn(amount);
+                    }
+                    <td colspan="18" style="font-weight:bold">
+                        In Words: @AmtConv
+                    </td>
+                </tr>
+                <tr>
+
+                    <td colspan="6">________________<br />Expensed By</td>
+                    <td colspan="6">________________<br />Checked By</td>
+                    <td colspan="6">________________<br />Authorized By</td>
+                </tr>
+            </tbody>
+
+        </table>
+
+
+
+
+
+       
+        </div>
+</body>
+
+</html>

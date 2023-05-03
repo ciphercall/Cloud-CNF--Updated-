@@ -1,0 +1,457 @@
+﻿@using System.Data
+@using System.Data.SqlClient
+@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.CNF_PARTY
+
+
+@{
+    ViewBag.Title = "PartyCreate";
+    
+    if (HttpContext.Current.Session["LoggedUserType"] == null)
+    {
+        Response.Redirect(Url.Action("Index", "Login"));
+    }
+
+    var LoggedUserTp = HttpContext.Current.Session["LoggedUserType"].ToString();
+    var LoggedUserStatus = HttpContext.Current.Session["LoggedUserStatus"].ToString();
+    var LoggedCompanyStatus = HttpContext.Current.Session["LoggedCompanyStatus"].ToString();
+
+    if ((LoggedUserTp == "CompanyAdmin" || LoggedUserTp == "UserAdmin" || LoggedUserTp == "User") && LoggedUserStatus == "A" && LoggedCompanyStatus == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+
+
+    List<SelectListItem> listItems = new List<SelectListItem>();
+    listItems.Add(new SelectListItem
+    {
+        Text = "Active",
+        Value = "A"
+    });
+    listItems.Add(new SelectListItem
+    {
+        Text = "Inactive",
+        Value = "I"
+    });
+
+    var mobile = "880";
+    Int64 compid = Convert.ToInt64(System.Web.HttpContext.Current.Session["loggedCompID"]);
+}
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    @Html.ValidationSummary(true)
+
+    @Html.HiddenFor(model => model.COMPID, new { @Value = compid })
+    
+     <div id="contentHeaderBox">
+        <h1 style="padding-left:16px">Party Creation</h1>
+        @if ((LoggedUserTp == "CompanyAdmin" || LoggedUserTp == "UserAdmin" || LoggedUserTp == "User") && LoggedUserStatus == "A")
+        {
+            var createStatus = "";
+            var updateStatus = "";
+            var deleteStatus = "";
+            var status = "";
+            var loggedUserID = HttpContext.Current.Session["loggedUserID"].ToString();
+            System.Data.SqlClient.SqlConnection conn = new System.Data.SqlClient.SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["CnfDbContext"].ToString());
+
+            string query1 = string.Format("SELECT STATUS, INSERTR, UPDATER, DELETER FROM ASL_ROLE WHERE  CONTROLLERNAME='Party' AND COMPID='{0}' AND USERID = '{1}'", compid, loggedUserID);
+
+            System.Data.SqlClient.SqlCommand cmd1 = new System.Data.SqlClient.SqlCommand(query1, conn);
+            conn.Open();
+
+            SqlDataAdapter da1 = new SqlDataAdapter(cmd1);
+            DataTable ds1 = new DataTable();
+            da1.Fill(ds1);
+
+            foreach (DataRow row in ds1.Rows)
+            {
+                status = row["STATUS"].ToString();
+                createStatus = row["INSERTR"].ToString();
+                updateStatus = row["UPDATER"].ToString();
+                deleteStatus = row["DELETER"].ToString();
+            }
+            conn.Close();
+            if (createStatus == "A")
+            {
+
+            }
+            else if (updateStatus == "A")
+            {
+                Response.Redirect("~/Party/PartyUpdate");
+            }
+            else if (deleteStatus == "A")
+            {
+                Response.Redirect("~/Party/PartyDelete");
+            }
+
+
+            if (createStatus == "I")
+            {
+                Response.Redirect(Url.Action("Index", "Logout"));
+            }
+            <div class="btn-group pull-right" id="editOption">
+                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" aria-expanded="false">
+                    <i class="fa fa-cog"></i>
+                </button>
+                <ul class="dropdown-menu pull-right" style="" role="menu">
+                    @if (createStatus == 'A'.ToString() && updateStatus == 'A'.ToString() && deleteStatus == 'A'.ToString())
+                    {
+                        <li>
+                            <a href="@Url.Action("PartyCreate", "Party")"><i class="fa fa-plus"></i> Create</a>
+                        </li>
+                        <li>
+                            <a href="@Url.Action("PartyUpdate", "Party")"><i class="fa fa-edit"></i> Update</a>
+                        </li>
+                        <li>
+                            <a href="@Url.Action("PartyDelete", "Party")"><i class="fa fa-times"></i> Delete</a>
+                        </li>
+                    }
+                    else if (updateStatus == 'A'.ToString() && deleteStatus == 'A'.ToString())
+                    {
+                        <li>
+                            <a href="@Url.Action("PartyUpdate", "Party")"><i class="fa fa-edit"></i> Update</a>
+                        </li>
+                        <li>
+                            <a href="@Url.Action("PartyDelete", "Party")"><i class="fa fa-times"></i> Delete</a>
+                        </li>
+                    }
+                    else if (createStatus == 'A'.ToString() && updateStatus == 'A'.ToString())
+                    {
+                        <li>
+                            <a href="@Url.Action("PartyCreate", "Party")"><i class="fa fa-plus"></i> Create</a>
+                        </li>
+                        <li>
+                            <a href="@Url.Action("PartyUpdate", "Party")"><i class="fa fa-edit"></i> Update</a>
+                        </li>
+                    }
+                    else if (createStatus == 'A'.ToString() && deleteStatus == 'A'.ToString())
+                    {
+                        <li>
+                            <a href="@Url.Action("PartyCreate", "Party")"><i class="fa fa-plus"></i> Create</a>
+                        </li>
+                        <li>
+                            <a href="@Url.Action("PartyDelete", "Party")"><i class="fa fa-times"></i> Delete</a>
+                        </li>
+                    }
+                    else if (createStatus == 'A'.ToString())
+                    {
+                        <li>
+                            <a href="@Url.Action("PartyCreate", "Party")"><i class="fa fa-plus"></i> Create</a>
+                        </li>
+                    }
+                    else if (updateStatus == 'A'.ToString())
+                    {
+                        <li>
+                            <a href="@Url.Action("PartyUpdate", "Party")"><i class="fa fa-edit"></i> Update</a>
+                        </li>
+                    }
+                    else if (deleteStatus == 'A'.ToString())
+                    {
+                        <li>
+                            <a href="@Url.Action("PartyDelete", "Party")"><i class="fa fa-times"></i> Delete</a>
+                        </li>
+                    }
+                </ul>
+            </div>
+
+        }
+
+    </div>
+     <br />
+     <div class="col-md-12">
+        @if (TempData["PartyCreationMessage"] != null)
+        {
+            <div class="panel-heading text-center">
+                <h4 style="color: #226699">@TempData["PartyCreationMessage"]</h4>
+            </div>
+        }
+         <div class="form-group">
+
+             <div class="row">
+                 <div class="col-md-3">
+                     @Html.LabelFor(model => model.PARTYNM, htmlAttributes: new { @class = "control-label" })
+                 </div>
+                 <div class="col-md-8">
+                     @Html.TextBoxFor(model => model.PARTYNM, htmlAttributes: new { @class = "form-control",autofocus=true })
+                     @Html.ValidationMessageFor(model => model.PARTYNM, "", new { @class = "text-danger" })
+                 </div>
+             </div>
+
+             <br />
+             <div class="row">
+                 <div class="col-md-3">
+                     @Html.LabelFor(model => model.ADDRESS, htmlAttributes: new { @class = "control-label" })
+                 </div>
+
+                 <div class="col-md-8">
+                     @Html.TextBoxFor(model => model.ADDRESS, htmlAttributes: new { @class = "form-control" })
+                    
+                 </div>
+             </div>
+             <br />
+             <div class="row">
+                 <div class="col-md-3">
+                     @Html.LabelFor(model => model.CONTACTNO, htmlAttributes: new { @class = "control-label" })
+                 </div>
+
+                 <div class="col-md-8">
+                     @Html.TextBoxFor(model => model.CONTACTNO, htmlAttributes: new { @class = "form-control", @Value = mobile })
+                     @Html.ValidationMessageFor(model => model.CONTACTNO, "", new { @class = "text-danger" })
+                 </div>
+             </div>
+
+             <br />
+             <div class="row">
+                 <div class="col-md-3">
+                     @Html.LabelFor(model => model.EMAILID, htmlAttributes: new { @class = "control-label" })
+                 </div>
+
+                 <div class="col-md-8">
+                     @Html.TextBoxFor(model => model.EMAILID, htmlAttributes: new { @class = "form-control" })
+                   
+                 </div>
+             </div>
+             <br />
+             <div class="row">
+                 <div class="col-md-3">
+                     @Html.Label("Email Address(2)", htmlAttributes: new { @class = "control-label" })
+                 </div>
+
+                 <div class="col-md-8">
+                     @Html.TextBoxFor(model => model.EMAILID2, htmlAttributes: new { @class = "form-control" })
+
+                 </div>
+             </div>
+             <br />
+             <div class="row">
+                 <div class="col-md-3">
+                     @Html.Label("Tel No", htmlAttributes: new { @class = "control-label" })
+                 </div>
+
+                 <div class="col-md-8">
+                     @Html.TextBoxFor(model => model.CONTACTNO2, htmlAttributes: new { @class = "form-control" })
+
+                 </div>
+             </div>
+             <br />
+             <div class="row">
+                 <div class="col-md-3">
+                     @Html.LabelFor(model => model.WEBID, htmlAttributes: new { @class = "control-label" })
+                 </div>
+                 <div class="col-md-8">
+                     @Html.TextBoxFor(model => model.WEBID, htmlAttributes: new { @class = "form-control" })
+                    
+                 </div>
+             </div>
+             <br />
+             <div class="row">
+                 <div class="col-md-3">
+                     @Html.LabelFor(model => model.APNM, htmlAttributes: new { @class = "control-label" })
+                 </div>
+                 <div class="col-md-8">
+                     @Html.TextBoxFor(model => model.APNM, htmlAttributes: new { @class = "form-control" })
+                     @Html.ValidationMessageFor(model => model.APNM, "", new { @class = "text-danger" })
+                 </div>
+             </div>
+             <br />
+             <div class="row">
+                 <div class="col-md-3">
+                     @Html.LabelFor(model => model.APNO, htmlAttributes: new { @class = "control-label" })
+                 </div>
+                 <div class="col-md-8">
+                     @Html.TextBoxFor(model => model.APNO, htmlAttributes: new { @class = "form-control" })
+                     @Html.ValidationMessageFor(model => model.APNO, "", new { @class = "text-danger" })
+                 </div>
+             </div>
+             <br />
+             <div class="row">
+                 <div class="col-md-3">
+                     @Html.Label("Remarks", htmlAttributes: new { @class = "control-label" })
+                 </div>
+                 <div class="col-md-8">
+                     @Html.TextBoxFor(model => model.REMARKS, htmlAttributes: new { @class = "form-control" })
+                 </div>
+             </div>
+             <br />
+             <div class="row">
+                 <div class="col-md-3">
+                     @Html.LabelFor(model => model.STATUS, htmlAttributes: new { @class = "control-label" })
+                 </div>
+                 <div class="col-md-8">
+                     @Html.DropDownListFor(model => model.STATUS, listItems, "--Select STATUS--", htmlAttributes: new { @class = "form-control" })
+                     @Html.ValidationMessageFor(model => model.STATUS, "", new { @class = "text-danger" })
+                 </div>
+             </div>
+
+             @Html.TextBoxFor(model => model.INSLTUDE, new { id = "latlon", style = "display: none;" })
+             <input id="lat" type="hidden" />
+             <input id="lon" type="hidden" />
+
+             <br />
+             <div class="row">
+                 <div class="col-md-3"></div>
+                 <div class="col-md-5">
+                     <input type="submit" class="btn btn-primary btn-block" value="Create" />
+                 </div>
+
+             </div>
+         </div>
+        </div>
+    
+    
+    
+    
+    @*<div class="container">
+        <div class="row">
+            <div class="col-md-2"></div>
+            <div class="col-md-8">
+                <div class="panel panel-info" style="padding: 0px; margin-bottom: 0px;">
+                    <div class="panel-heading text-center">
+                        <h4>Party Creation</h4>
+                    </div>
+                </div>
+
+
+                <div class="jumbotron" style="padding-top: 20px; padding-bottom: 11px">
+
+                    <div class="form-group">
+
+                        <div class="row">
+                            <div class="col-md-3">
+                                @Html.LabelFor(model => model.PARTYNM, htmlAttributes: new { @class = "control-label" })
+                            </div>
+                            <div class="col-md-8">
+                                @Html.TextBoxFor(model => model.PARTYNM, htmlAttributes: new { @class = "form-control" })
+                                @Html.ValidationMessageFor(model => model.PARTYNM, "", new { @class = "text-danger" })
+                            </div>
+                        </div>
+
+                        <br />
+                        <div class="row">
+                            <div class="col-md-3">
+                                @Html.LabelFor(model => model.ADDRESS, htmlAttributes: new { @class = "control-label" })
+                            </div>
+
+                            <div class="col-md-8">
+                                @Html.TextBoxFor(model => model.ADDRESS, htmlAttributes: new { @class = "form-control" })
+                                @Html.ValidationMessageFor(model => model.ADDRESS, "", new { @class = "text-danger" })
+                            </div>
+                        </div>
+                        <br />
+                        <div class="row">
+                            <div class="col-md-3">
+                                @Html.LabelFor(model => model.CONTACTNO, htmlAttributes: new { @class = "control-label" })
+                            </div>
+
+                            <div class="col-md-8">
+                                @Html.TextBoxFor(model => model.CONTACTNO, htmlAttributes: new { @class = "form-control", @Value = mobile })
+                                @Html.ValidationMessageFor(model => model.CONTACTNO, "", new { @class = "text-danger" })
+                            </div>
+                        </div>
+
+                        <br />
+                        <div class="row">
+                            <div class="col-md-3">
+                                @Html.LabelFor(model => model.EMAILID, htmlAttributes: new { @class = "control-label" })
+                            </div>
+
+                            <div class="col-md-8">
+                                @Html.TextBoxFor(model => model.EMAILID, htmlAttributes: new { @class = "form-control" })
+                                @Html.ValidationMessageFor(model => model.EMAILID, "", new { @class = "text-danger" })
+                            </div>
+                        </div>
+                        <br />
+                        <div class="row">
+                            <div class="col-md-3">
+                                @Html.LabelFor(model => model.WEBID, htmlAttributes: new { @class = "control-label" })
+                            </div>
+                            <div class="col-md-8">
+                                @Html.TextBoxFor(model => model.WEBID, htmlAttributes: new { @class = "form-control" })
+                                @Html.ValidationMessageFor(model => model.WEBID, "", new { @class = "text-danger" })
+                            </div>
+                        </div>
+                        <br />
+                        <div class="row">
+                            <div class="col-md-3">
+                                @Html.LabelFor(model => model.APNM, htmlAttributes: new { @class = "control-label" })
+                            </div>
+                            <div class="col-md-8">
+                                @Html.TextBoxFor(model => model.APNM, htmlAttributes: new { @class = "form-control" })
+                                @Html.ValidationMessageFor(model => model.APNM, "", new { @class = "text-danger" })
+                            </div>
+                        </div>
+                        <br />
+                        <div class="row">
+                            <div class="col-md-3">
+                                @Html.LabelFor(model => model.APNO, htmlAttributes: new { @class = "control-label" })
+                            </div>
+                            <div class="col-md-8">
+                                @Html.TextBoxFor(model => model.APNO, htmlAttributes: new { @class = "form-control" })
+                                @Html.ValidationMessageFor(model => model.APNO, "", new { @class = "text-danger" })
+                            </div>
+                        </div>
+                        <br />
+                        <div class="row">
+                            <div class="col-md-3">
+                                @Html.LabelFor(model => model.STATUS, htmlAttributes: new { @class = "control-label" })
+                            </div>
+                            <div class="col-md-8">
+                                @Html.DropDownListFor(model => model.STATUS, listItems, "--Select STATUS--", htmlAttributes: new { @class = "form-control" })
+                                @Html.ValidationMessageFor(model => model.STATUS, "", new { @class = "text-danger" })
+                            </div>
+                        </div>
+
+                        @Html.TextBoxFor(model => model.INSLTUDE, new { id = "latlon", style = "display: none;" })
+                        <input id="lat" type="hidden" />
+                        <input id="lon" type="hidden" />
+
+                        <br />
+                        <div class="row">
+                            <div class="col-md-3"></div>
+                            <div class="col-md-5">
+                                <input type="submit" class="btn btn-primary btn-block" value="Create" />
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="col-md-2"></div>
+        </div>
+
+    </div>*@
+
+    <script src="http://maps.google.com/maps/api/js?sensor=false"></script>
+
+    <script language="javascript" type="text/javascript">
+        $(function () {
+            navigator.geolocation.getCurrentPosition(showPosition);
+
+            function showPosition(position) {
+                var coordinates = position.coords;
+                $("#lat").val(coordinates.latitude);
+                $("#lon").val(coordinates.longitude);
+
+                $("#latlon").val(
+                                    $("#lat").val() + "," + $("#lon").val()
+                                );
+            }
+            //function positionError(position) {
+            //    alert("!!! Error: "+position.code);
+            //}
+        });
+    </script>
+
+}
+
+
+@*@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}*@

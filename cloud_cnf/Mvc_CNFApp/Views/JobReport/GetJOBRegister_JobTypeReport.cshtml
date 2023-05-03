@@ -1,0 +1,161 @@
+﻿@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.CNF_JOB
+
+
+@{
+    Layout = null;
+    var LoggedCompId = Model.COMPID;
+    Int64 compid = Convert.ToInt64(LoggedCompId);
+
+    string companyName = "", address = "", contactNo = "";
+    CnfDbContext db = new CnfDbContext();
+    var SelectCompanyName = from n in db.AslCompanyDbSet
+
+                            where n.COMPID == compid
+                            select new { n.COMPNM, n.ADDRESS, n.CONTACTNO };
+
+    foreach (var n in SelectCompanyName)
+    {
+        companyName = n.COMPNM;
+        address = n.ADDRESS;
+        contactNo = n.CONTACTNO;
+    }
+    var compNm = companyName;
+    var Address = address;
+    var contactno = contactNo;
+    
+    var JobType = Model.JOBTP;
+    var jobYear = Model.JOBYY;
+
+    TimeZoneInfo timeZoneInfo;
+    timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Central Asia Standard Time");
+    DateTime currentDateTime = TimeZoneInfo.ConvertTime(DateTime.Now, timeZoneInfo);
+
+    
+}
+
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+
+    <link href="~/Content/reportcss/style.css" rel="stylesheet" />
+    @*<script type="text/javascript">
+            function ClosePrint() {
+                var print = document.getElementById("print");
+                print.style.visibility = "hidden";
+                //            print.display = false;
+
+                window.print();
+            }
+        </script>*@
+
+</head>
+<body style=" background-color:#fafafa;">
+    <div style="width: 960px; margin: 0px auto; border: 1px solid #d3d3d3; border-radius: 5px; box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); background: none repeat scroll 0 0 white;">
+        @*<input id="print" tabindex="1" type="button" value="Print" onclick="ClosePrint()" />*@
+
+        <table id="mainTable" border="0" width="100%">
+            <thead>
+                <tr>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="10%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+
+                </tr>
+                <tr style="background-color: #00689b">
+                    <td colspan="12">
+                        <h3 style="color: white;padding:4px">@compNm</h3>
+                        <p style="color:white;padding-left:4px">@Address<span>  @contactno</span></p>
+                    </td>
+
+                    <td colspan="6" style="color: white;padding:8px" align="right">
+                        Powered By<br />Alchemy Software
+                    </td>
+
+                </tr>
+
+                <tr>
+                    <td colspan="12" align="left" style="padding: 4px; font-weight: bold">Job Register</td>
+                    <td align="right" colspan="6" style="padding:8px">Print:@currentDateTime.ToString("dd-MM-yy hh:mm tt")</td>
+                </tr>
+
+                <tr style="outline: thin solid">
+
+                    <td colspan="4" style="font-weight: bold;padding:4px"> Job Type : <span style="font-weight:bold">@JobType</span></td>
+                    <td colspan="3" align="left" style="font-weight:bold">Job Year : <span style="font-weight:bold">@jobYear</span> </td>
+                    <td colspan="8"></td>
+                    <td colspan="3" style="padding:4px"><span style="font-weight: bold"></span></td>
+
+                </tr>
+
+
+
+                <tr style="background-color: #00689b; outline: thin solid">
+
+                    <td colspan="2" style="color: white; padding: 4px; font-size: small" align="center">Job No</td>
+                    <td colspan="2" style="color: white; padding: 4px; font-size: small" align="center">Reg ID</td>
+                    <td colspan="3" style="color: white; padding: 4px; font-size: small" align="center">Party</td>
+                    <td colspan="3" style="color: white; padding: 4px; font-size: small" align="center">Goods</td>
+                    <td colspan="3" style="color: white; padding: 4px; font-size: small" align="center">Packages</td>
+                    <td colspan="2" style="color: white; padding: 4px; font-size:small" align="center">Permit No</td>
+                    <td colspan="3" style="color: white; padding: 4px; font-size: small" align="center">Invoice No</td>
+
+
+
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    var getList = (from n in db.CnfJobDbSet where n.COMPID == compid && n.JOBYY == jobYear && n.JOBTP == JobType select n).ToList();
+                    var findPartyName = (from n in db.GlAcchartDbSet where n.COMPID == compid select n).ToList();
+
+                }
+                @if (getList.Count != 0)
+                {
+                    foreach (var item in getList)
+                    {
+                        <tr style="outline:thin solid">
+                            <td colspan="2" align="center" style="font-size:small">@Html.DisplayFor(modelItem => item.JOBNO)</td>
+                            <td colspan="2" style="font-size:small">@Html.DisplayFor(modelItem => item.REGID)</td>
+                            <td colspan="3" style="font-size:small">
+                                @foreach (var y in findPartyName)
+                                {
+                                    if (item.PARTYID != null && y.ACCOUNTCD == item.PARTYID)
+                                    {
+                                        @Html.DisplayFor(modelItem => y.ACCOUNTNM)
+                                    }
+                                }
+                            </td>
+                            <td colspan="3" style="font-size:small">@Html.DisplayFor(modelItem => item.GOODS)</td>
+                            <td colspan="3" style="font-size:small">@Html.DisplayFor(modelItem => item.PKGS)</td>
+                            <td colspan="2" style="font-size:small">@Html.DisplayFor(modelItem => item.PERMITNO)</td>
+                            <td colspan="3" style="font-size:small">@Html.DisplayFor(modelItem => item.DOCINVNO)</td>
+                        </tr>
+                    }
+
+                }
+
+
+
+            </tbody>
+        </table>
+        </div>
+</body>
+
+</html>

@@ -1,0 +1,290 @@
+﻿@using System.Data
+@using System.Data.SqlClient
+@using Mvc_CNFApp.DataAccess
+@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.PageModel
+
+@{
+    Layout = null;
+    var LoggedCompId = Model.ACnfJobrcv.COMPID;
+    Int64 compid = Convert.ToInt64(LoggedCompId);
+
+
+    string companyName = "", address = "", contactNo = "";
+    CnfDbContext db = new CnfDbContext();
+    var SelectCompanyName = from n in db.AslCompanyDbSet
+
+                            where n.COMPID == compid
+                            select new { n.COMPNM, n.ADDRESS, n.CONTACTNO };
+
+    foreach (var n in SelectCompanyName)
+    {
+        companyName = n.COMPNM;
+        address = n.ADDRESS;
+        contactNo = n.CONTACTNO;
+    }
+    var compNm = companyName;
+    var Address = address;
+    var contactno = contactNo;
+
+    DateTime fdate = Convert.ToDateTime(Model.FromDate);
+    string ddt = fdate.ToString("dd-MMM-yyyy");
+    var fromdate = ddt;
+
+    DateTime tDate = Convert.ToDateTime(Model.ToDate);
+    string tdd = tDate.ToString("dd-MMM-yyyy");
+    var todate = tdd;
+
+    var partyID = Model.ACnfJobrcv.PARTYID;
+    Int64 partyid = Convert.ToInt64(partyID);
+    var SearchPartyName = from n in db.GlAcchartDbSet where n.COMPID == compid && n.ACCOUNTCD == partyid select new { n.ACCOUNTNM };
+    string partyName = "";
+    foreach (var n in SearchPartyName)
+    {
+        partyName = n.ACCOUNTNM;
+    }
+
+    TimeZoneInfo timeZoneInfo;
+    timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Central Asia Standard Time");
+    DateTime currentDateTime = TimeZoneInfo.ConvertTime(DateTime.Now, timeZoneInfo);
+
+
+    Decimal totalAmount = 0, total_Bill_DRAMT = 0, total_receive_CRAMT = 0, total_Balance = 0;
+
+}
+
+
+
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <link href="~/Content/reportcss/style.css" rel="stylesheet" />
+    @*<script type="text/javascript">
+            function ClosePrint() {
+                var print = document.getElementById("print");
+                print.style.visibility = "hidden";
+                //            print.display = false;
+
+                window.print();
+            }
+        </script>*@
+
+</head>
+<body style=" background-color:#fafafa;">
+
+    @*<input id="print" tabindex="1" type="button" value="Print" onclick="ClosePrint()" />*@
+    <div style="width: 960px; margin: 0px auto; border: 1px solid #d3d3d3; border-radius: 5px; box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); background: none repeat scroll 0 0 white;">
+        <table id="mainTable" border="0" width="100%">
+            <thead>
+                <tr>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="10%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+
+                </tr>
+                <tr style="background-color: #00689b">
+                    <td colspan="12">
+                        <h3 style="color: white;padding:4px">@compNm</h3>
+                        <p style="color:white;padding-left:4px">@Address<br />  @contactno</p>
+                    </td>
+
+                    <td colspan="6" style="color: white;padding:8px" align="right">
+                        Powered By<br />Alchemy Software
+                    </td>
+
+                </tr>
+                <tr>
+                    <td colspan="12" align="left" style="padding: 4px; font-weight: bold">Party Bill Information</td>
+                    <td align="right" colspan="6" style="padding:8px">Print:@currentDateTime.ToString("dd-MM-yy hh:mm tt")</td>
+                </tr>
+                <tr style="outline: thin solid">
+                    <td colspan="18" style="padding:4px;font-weight:bold">Party Name : <span style="font-weight: bold">@partyName</span></td>
+                  
+
+
+                </tr>
+                <tr>
+                    <td colspan="6" style="font-weight: bold"> From Date : <span style="font-weight:bold">@fromdate</span></td>
+
+                    <td colspan="6" align="left" style="font-weight:bold">To Date : <span style="font-weight:bold">@todate</span> </td>
+                </tr>
+                @{
+                    System.Data.SqlClient.SqlConnection conn1 = new System.Data.SqlClient.SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["CnfDbContext"].ToString());
+                    string query1 = string.Format(
+                        "SELECT SUM(DEBITAMT)- SUM(CREDITAMT) AS OPAMT FROM GL_MASTER WHERE COMPID='{0}' AND DEBITCD= '{2}' AND TRANSDT <='{1}'",
+                        compid, tDate, partyid);
+                    System.Data.SqlClient.SqlCommand cmd1 = new System.Data.SqlClient.SqlCommand(query1, conn1);
+                    conn1.Open();
+                    SqlDataAdapter da1 = new SqlDataAdapter(cmd1);
+                    DataTable ds1 = new DataTable();
+                    da1.Fill(ds1);
+                    Decimal openingBalance = 0;
+
+                    foreach (DataRow row in ds1.Rows)
+                    {
+                        string OPAMT = row["OPAMT"].ToString();
+                        if (OPAMT != "")
+                        {
+                            openingBalance = Convert.ToDecimal(OPAMT);
+                        }
+                        else
+                        {
+                            openingBalance = 0;
+                        }
+                        string convertopamount = Convert.ToString(openingBalance);
+
+                        string Opening = CommainAmount.AmountwithComma(convertopamount);
+                        <tr>
+                            <td colspan="15" align="right" style="font-weight:bold">
+                                Ledger Balance :
+                            </td>
+                            <td colspan="3" align="right" style="font-weight:bold">
+                                @Opening
+                            </td>
+
+                        </tr>
+
+
+                    }
+                    conn1.Close();
+                }
+                <tr style="background-color: #00689b; outline: thin solid">
+
+                    <td colspan="2" style="color: white; padding: 4px" align="center">Date</td>
+                    <td colspan="2" style="color: white; padding: 4px" align="center">Memo No</td>
+                    <td colspan="10" style="color: white; padding: 4px" align="center">Remarks</td>
+                    <td colspan="4" style="color: white; padding: 4px" align="center">Bill</td>
+                    @*<td colspan="3" style="color: white; padding: 4px" align="center">Receive/Adj</td>
+                        <td colspan="3" style="color: white; padding: 4px" align="center">Balance</td>*@
+
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    System.Data.SqlClient.SqlConnection conn = new System.Data.SqlClient.SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["CnfDbContext"].ToString());
+                    string query = string.Format(
+                        "SELECT TRANSDT, TRANSNO, REMARKS, ISNULL(DEBITAMT,0) DRAMT, 0 CRAMT" +
+                        " FROM GL_MASTER WHERE COMPID='{0}' AND DEBITCD= '{3}'" +
+                        " AND TRANSDT  BETWEEN '{1}' AND '{2}' AND TABLEID='CNF_JOBBILL'",
+                        compid, fdate, tDate, partyid);
+                    System.Data.SqlClient.SqlCommand cmd = new System.Data.SqlClient.SqlCommand(query, conn);
+                    conn.Open();
+                    SqlDataAdapter da = new SqlDataAdapter(cmd);
+                    DataTable ds = new DataTable();
+                    da.Fill(ds);
+
+                    string transdt = "", Memono = "", Remarks = "", Bill_DRAMT_null = "";
+                    Decimal receive_CRAMT = 0, Bill_DRAMT = 0, Balance = 0;
+                    int i = 0;//only for first data
+                    foreach (DataRow row in ds.Rows)
+                    {
+                        transdt = row["TRANSDT"].ToString();
+                        DateTime date = Convert.ToDateTime(transdt);
+                        string transdt_convertDate = date.ToString("dd-MMM-yyyy");
+
+                        Memono = row["TRANSNO"].ToString();
+                        Remarks = row["REMARKS"].ToString();
+                        Bill_DRAMT_null = row["DRAMT"].ToString();
+                        if (Bill_DRAMT_null != "")
+                        {
+                            Bill_DRAMT = Convert.ToDecimal(row["DRAMT"]);
+                        }
+                        else
+                        {
+                            Bill_DRAMT = 0;
+                        }
+                        receive_CRAMT = Convert.ToDecimal(row["CRAMT"]);
+
+
+                        if (i == 0)
+                        {
+                            Balance = Balance + (openingBalance - Bill_DRAMT + receive_CRAMT);
+                            i = 1;
+                        }
+                        else
+                        {
+                            Balance = Balance - Bill_DRAMT + receive_CRAMT;
+                        }
+                        string billamt = Convert.ToString(Bill_DRAMT);
+
+                        string Billamt = CommainAmount.AmountwithComma(billamt);
+                        <tr style="outline:thin solid">
+                            <td align="center" colspan="2">
+                                @transdt_convertDate
+                            </td>
+                            <td align="center" colspan="2">
+                                @Memono
+                            </td>
+                            <td colspan="10">
+                                @Remarks
+                            </td>
+                            <td align="right" colspan="4">
+                                @Billamt
+                            </td>
+                            @*<td align="right" colspan="3">
+                                    @receive_CRAMT
+                                </td>
+                                <td align="right" colspan="3">
+                                    @Balance
+                                </td>*@
+                        </tr>
+
+
+
+
+                        total_Bill_DRAMT = total_Bill_DRAMT + Bill_DRAMT;
+                        //total_receive_CRAMT = total_receive_CRAMT + receive_CRAMT;
+                    }
+
+                    conn.Close();
+                }
+
+               @{
+                   string totalbillamt = Convert.ToString(total_Bill_DRAMT);
+
+                   string Totalbillamt = CommainAmount.AmountwithComma(totalbillamt);
+               }
+                <tr>
+                    <td colspan="3"></td>
+                    <td colspan="3"></td>
+                    <td align="right" colspan="8" style="font-weight:bold">
+                        Total:
+                    </td>
+                    <td align="right" colspan="4" style="font-weight:bold">
+                        @Totalbillamt
+                    </td>
+                    @*<td align="right" colspan="3" style="font-weight:bold">
+                            @total_receive_CRAMT
+                        </td>
+                        <td align="right" colspan="3" style="font-weight:bold">
+                            @{
+                                total_Balance = openingBalance - total_Bill_DRAMT + total_receive_CRAMT;
+                            }
+                            @total_Balance
+                        </td>*@
+                </tr>
+
+            </tbody>
+        </table>
+
+    </div>
+
+
+</body>
+</html>

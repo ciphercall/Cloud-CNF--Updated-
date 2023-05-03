@@ -1,0 +1,489 @@
+﻿@using System.Data
+@using System.Data.SqlClient
+@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.CNF_JOBRCV
+@{
+    ViewBag.Title = "Delete";
+    if (HttpContext.Current.Session["LoggedUserType"] == null)
+    {
+        Response.Redirect(Url.Action("Index", "Login"));
+    }
+
+    var LoggedUserTp = HttpContext.Current.Session["LoggedUserType"].ToString();
+    var LoggedUserStatus = HttpContext.Current.Session["LoggedUserStatus"].ToString();
+    var LoggedCompanyStatus = HttpContext.Current.Session["LoggedCompanyStatus"].ToString();
+
+    if ((LoggedUserTp == "CompanyAdmin" || LoggedUserTp == "UserAdmin" || LoggedUserTp == "User") && LoggedUserStatus == "A" && LoggedCompanyStatus == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+
+    CnfDbContext db = new CnfDbContext();
+   
+    Int64 compid = Convert.ToInt64(System.Web.HttpContext.Current.Session["loggedCompID"]);
+    
+    List<SelectListItem> listtransFor = new List<SelectListItem>();
+    listtransFor.Add(new SelectListItem
+    {
+        Text = "ADVANCE",
+        Value = "ADVANCE"
+    });
+    listtransFor.Add(new SelectListItem
+    {
+        Text = "DISCOUNT",
+        Value = "DISCOUNT"
+    });
+    listtransFor.Add(new SelectListItem
+    {
+        Text = "NORMAL",
+        Value = "NORMAL"
+    });
+
+
+    List<SelectListItem> listdebitaccount = new List<SelectListItem>();
+    var resultAccountName = (from n in db.GlAcchartDbSet where n.COMPID == compid select n).ToList();
+
+    foreach (var n in resultAccountName)
+    {
+        GL_ACCHART aCnfChart = db.GlAcchartDbSet.FirstOrDefault(e => e.ACCOUNTCD == n.ACCOUNTCD);
+        if (aCnfChart != null)
+        {
+            listdebitaccount.Add(new SelectListItem { Text = (aCnfChart.ACCOUNTNM), Value = aCnfChart.ACCOUNTCD.ToString() });
+        }
+    }
+
+    List<SelectListItem> listItems = new List<SelectListItem>();
+    var resultTransNo = (from n in db.CnfJobrcvs where n.COMPID == compid select n).ToList();
+    foreach (var n in resultTransNo)
+    {
+        listItems.Add(new SelectListItem { Text = n.TRANSNO.ToString(), Value = n.TRANSNO.ToString() });
+
+    }
+    
+}
+
+<link href="~/Content/bootstrap_datepicker_css/datepicker.css" rel="stylesheet" />
+<link href="~/Content/bootstrap_datepicker_css/datepicker3.css" rel="stylesheet" />
+
+<script src="~/Scripts/bootstrap-datepicker.js"></script>
+
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    @Html.ValidationSummary(true)
+
+    @Html.HiddenFor(model => model.CNF_JOBRCVID, new { id = "HiddentxtCNF_JobRCVId" })
+    @Html.HiddenFor(model => model.COMPID, new { @Value = compid })
+    
+     <div id="contentHeaderBox">
+        <h1 style="padding-left:16px">Receive Against Job Information(Delete)</h1>
+        @if ((LoggedUserTp == "CompanyAdmin" || LoggedUserTp == "UserAdmin" || LoggedUserTp == "User") && LoggedUserStatus == "A")
+        {
+            var createStatus = "";
+            var updateStatus = "";
+            var deleteStatus = "";
+            var status = "";
+            var loggedUserID = HttpContext.Current.Session["loggedUserID"].ToString();
+            System.Data.SqlClient.SqlConnection conn = new System.Data.SqlClient.SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["CnfDbContext"].ToString());
+
+            string query1 = string.Format("SELECT STATUS, INSERTR, UPDATER, DELETER FROM ASL_ROLE WHERE  CONTROLLERNAME='ReceiveJobInfo' AND COMPID='{0}' AND USERID = '{1}'", compid, loggedUserID);
+
+            System.Data.SqlClient.SqlCommand cmd1 = new System.Data.SqlClient.SqlCommand(query1, conn);
+            conn.Open();
+
+            SqlDataAdapter da1 = new SqlDataAdapter(cmd1);
+            DataTable ds1 = new DataTable();
+            da1.Fill(ds1);
+
+            foreach (DataRow row in ds1.Rows)
+            {
+                status = row["STATUS"].ToString();
+                createStatus = row["INSERTR"].ToString();
+                updateStatus = row["UPDATER"].ToString();
+                deleteStatus = row["DELETER"].ToString();
+            }
+            conn.Close();
+            if (createStatus == "A")
+            {
+
+            }
+            else if (updateStatus == "A")
+            {
+                Response.Redirect("~/ReceiveJobInfo/Update");
+            }
+            else if (deleteStatus == "A")
+            {
+                Response.Redirect("~/ReceiveJobInfo/Delete");
+            }
+
+
+            if (createStatus == "I")
+            {
+                Response.Redirect(Url.Action("Index", "Logout"));
+            }
+            <div class="btn-group pull-right" id="editOption">
+                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" aria-expanded="false">
+                    <i class="fa fa-cog"></i>
+                </button>
+                <ul class="dropdown-menu pull-right" style="" role="menu">
+                    @if (createStatus == 'A'.ToString() && updateStatus == 'A'.ToString() && deleteStatus == 'A'.ToString())
+                    {
+                        <li>
+                            <a href="@Url.Action("Create", "ReceiveJobInfo")"><i class="fa fa-plus"></i> Create</a>
+                        </li>
+                        <li>
+                            <a href="@Url.Action("Update", "ReceiveJobInfo")"><i class="fa fa-edit"></i> Update</a>
+                        </li>
+                        <li>
+                            <a href="@Url.Action("Delete", "ReceiveJobInfo")"><i class="fa fa-times"></i> Delete</a>
+                        </li>
+                    }
+                    else if (updateStatus == 'A'.ToString() && deleteStatus == 'A'.ToString())
+                    {
+                        <li>
+                            <a href="@Url.Action("Update", "ReceiveJobInfo")"><i class="fa fa-edit"></i> Update</a>
+                        </li>
+                        <li>
+                            <a href="@Url.Action("Delete", "ReceiveJobInfo")"><i class="fa fa-times"></i> Delete</a>
+                        </li>
+                    }
+                    else if (createStatus == 'A'.ToString() && updateStatus == 'A'.ToString())
+                    {
+                        <li>
+                            <a href="@Url.Action("Create", "ReceiveJobInfo")"><i class="fa fa-plus"></i> Create</a>
+                        </li>
+                        <li>
+                            <a href="@Url.Action("Update", "ReceiveJobInfo")"><i class="fa fa-edit"></i> Update</a>
+                        </li>
+                    }
+                    else if (createStatus == 'A'.ToString() && deleteStatus == 'A'.ToString())
+                    {
+                        <li>
+                            <a href="@Url.Action("Create", "ReceiveJobInfo")"><i class="fa fa-plus"></i> Create</a>
+                        </li>
+                        <li>
+                            <a href="@Url.Action("Delete", "ReceiveJobInfo")"><i class="fa fa-times"></i> Delete</a>
+                        </li>
+                    }
+                    else if (createStatus == 'A'.ToString())
+                    {
+                        <li>
+                            <a href="@Url.Action("Create", "ReceiveJobInfo")"><i class="fa fa-plus"></i> Create</a>
+                        </li>
+                    }
+                    else if (updateStatus == 'A'.ToString())
+                    {
+                        <li>
+                            <a href="@Url.Action("Update", "ReceiveJobInfo")"><i class="fa fa-edit"></i> Update</a>
+                        </li>
+                    }
+                    else if (deleteStatus == 'A'.ToString())
+                    {
+                        <li>
+                            <a href="@Url.Action("Delete", "ReceiveJobInfo")"><i class="fa fa-times"></i> Delete</a>
+                        </li>
+                    }
+                </ul>
+            </div>
+
+        }
+
+    </div>
+     <br />
+    <div class="col-md-12">
+        @if (TempData["JobRCVDeleteMessage"] != null)
+        {
+            <div class="panel-heading text-center">
+                <h4 style="color: #226699">@TempData["JobRCVDeleteMessage"]</h4>
+            </div>
+        }
+        <div class="form-group">
+            <div class="row">
+                <div class="col-md-3">
+                    @Html.Label("Year", htmlAttributes: new { @class = "control-label" })
+                </div>
+
+                <div class="col-md-8">
+                    @Html.TextBoxFor(model => model.TRANSYY, htmlAttributes: new { id = "txtidTransYear", @class = "form-control" ,autofocus=true})
+                    @*@Html.ValidationMessageFor(model => model.TRANSYY, "", new { @class = "text-danger" })*@
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-3">
+                    @Html.Label("Trans No", htmlAttributes: new { @class = "control-label" })
+                </div>
+
+                <div class="col-md-8">
+                    @Html.DropDownListFor(model => model.TRANSNO, Enumerable.Empty<SelectListItem>(), "empty", new { id = "txtidTransNo", @class = "form-control" })
+                    @Html.ValidationMessageFor(model => model.TRANSNO, "", new { @class = "text-danger" })
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-3">
+                    @Html.Label("Date", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-8">
+                    @Html.TextBoxFor(model => model.TRANSDT, htmlAttributes: new { id = "txtidTransDate", @class = "form-control", @readonly = "readonly" })
+
+                </div>
+            </div>
+
+            <br />
+
+
+            <div class="row">
+                <div class="col-md-3">
+                    @Html.Label("Mode", htmlAttributes: new { @class = "control-label" })
+                </div>
+
+                <div class="col-md-8">
+                    @Html.TextBoxFor(model => model.TRANSFOR, htmlAttributes: new { id = "txtidTransFor", @class = "form-control", @readonly = "readonly" })
+                    @*@Html.TextBoxFor(model => model.TRANSFOR, htmlAttributes: new { id = "txtidTransFor", @class = "form-control" })*@
+
+                </div>
+            </div>
+
+            <br />
+            <div class="row">
+                <div class="col-md-3">
+                    @Html.Label("Job No", htmlAttributes: new { @class = "control-label" })
+                </div>
+
+                <div class="col-md-8">
+                    @Html.TextBoxFor(model => model.JOBNO, htmlAttributes: new { id = "txtidJobNo", @class = "form-control", @readonly = "readonly" })
+
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-3">
+                    @Html.Label("Job Year", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-8">
+                    @Html.TextBoxFor(model => model.JOBYY, htmlAttributes: new { id = "txtidJobYear", @class = "form-control", @readonly = "readonly" })
+
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-3">
+                    @Html.Label("Job Type", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-8">
+                    @Html.TextBoxFor(model => model.JOBTP, htmlAttributes: new { id = "txtidJobType", @class = "form-control", @readonly = "readonly" })
+
+                </div>
+            </div>
+            <br />
+            <div class="row">
+
+                <div class="col-md-8">
+                    @Html.HiddenFor(model => model.PARTYID, htmlAttributes: new { id = "txtidPartyId", @class = "form-control", @readonly = "readonly" })
+
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-3">
+                    @Html.Label("Party Name", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-8">
+                    @Html.TextBoxFor(model => model.USERPC, htmlAttributes: new { id = "txtidPartyName", @class = "form-control", @readonly = "readonly" })
+
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-3">
+                    @Html.Label("Received To", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-8">
+                    @Html.DropDownListFor(model => model.DEBITCD, listdebitaccount, "--Select Acount Name--", htmlAttributes: new { id = "txtidDebitCD", @class = "form-control", @readonly = "readonly" })
+
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-3">
+                    @Html.Label("Remarks", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-8">
+                    @Html.TextBoxFor(model => model.REMARKS, htmlAttributes: new { id = "txtidRemarks", @class = "form-control", @readonly = "readonly" })
+
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-3">
+                    @Html.Label("Amount", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-8">
+                    @Html.TextBoxFor(model => model.AMOUNT, htmlAttributes: new { id = "txtidAmount", @class = "form-control", @readonly = "readonly" })
+
+                </div>
+            </div>
+
+            @Html.TextBoxFor(model => model.INSLTUDE, new { id = "latlon", style = "display: none;" })
+            <input id="lat" type="hidden" />
+            <input id="lon" type="hidden" />
+
+            <br />
+            <div class="row">
+                <div class="col-md-3"></div>
+                <div class="col-md-6">
+                    <input type="submit" class="btn btn-primary btn-block" value="Delete" />
+                </div>
+
+            </div>
+        </div>
+        </div>
+    
+    
+    
+    
+    
+ 
+
+    <script src="http://maps.google.com/maps/api/js?sensor=false"></script>
+
+    <script language="javascript" type="text/javascript">
+        $(function () {
+            navigator.geolocation.getCurrentPosition(showPosition);
+
+            function showPosition(position) {
+                var coordinates = position.coords;
+                $("#lat").val(coordinates.latitude);
+                $("#lon").val(coordinates.longitude);
+
+                $("#latlon").val(
+                    $("#lat").val() + "," + $("#lon").val()
+                );
+            }
+            //function positionError(position) {
+            //    alert("!!! Error: "+position.code);
+            //}
+        });
+    </script>
+    
+    <script type="text/javascript">
+
+        $("#txtidTransYear").datepicker({
+            format: " yyyy", // Notice the Extra space at the beginning
+            viewMode: "years",
+            minViewMode: "years",
+            autoclose:true
+        });
+
+     
+    </script>
+    
+    <script type="text/javascript">
+        $(function () {
+            $('#txtidTransYear').change(function () {
+                var txtTransYear = $('#txtidTransYear').val();
+               
+                //...................
+                $.getJSON('/ReceiveJobInfo/TransYearChanged', { "TxtTransYear": txtTransYear },
+                    function (result) {
+                        var ddl = $('#txtidTransNo');
+                        ddl.empty();
+                        $("#txtidTransNo").append('<option value="'
+                            + "select" + '">'
+                            + "select" + '</option>');
+                        $(result).each(function () {
+                            $(document.createElement('option'))
+                                .attr('value', this.Value)
+                                .text(this.Text)
+                                .appendTo(ddl);
+                        });
+                    });
+                
+               
+                //......................
+            });
+
+        });
+
+
+        $(function() {
+            $('#txtidTransNo').change(function() {
+
+                var changedtxt = $('#txtidTransNo').val();
+                var txtprimarykey = document.getElementById('HiddentxtCNF_JobRCVId');
+                var txttransDate = document.getElementById('txtidTransDate');
+                var txtjobYear = document.getElementById('txtidJobYear');
+                var txtjobType = document.getElementById('txtidJobType');
+
+                var txtPartyId = document.getElementById('txtidPartyId');
+
+                var txtPartyName = document.getElementById('txtidPartyName');
+                var txttransYear = document.getElementById('txtidTransYear');
+                var txttransFor = document.getElementById('txtidTransFor');
+                var txtjobNo = document.getElementById('txtidJobNo');
+                var txtdebitCode = document.getElementById('txtidDebitCD');
+                var txtRemarks = document.getElementById('txtidRemarks');
+                var txtAmount = document.getElementById('txtidAmount');
+
+
+                var txtINSTIME = document.getElementById('HiddentxtInstime');
+                var txtINSIPNO = document.getElementById('HiddentxtInsipno');
+                var txtINSLTUDE = document.getElementById('HiddentxtInsltude');
+                var txtINSUSERID = document.getElementById('HiddentxtInsuserId');
+
+
+                $.getJSON(
+                    "/ReceiveJobInfo/Update_SelectTransNo", { "Changedtxt": changedtxt },
+                    function(myData) {
+                        txtprimarykey.value = myData.keyid;
+                        txttransDate.value = myData.Date;
+                        txttransYear.value = myData.Year;
+                        txttransFor.value = myData.For;
+                        txtjobNo.value = myData.No;
+                        txtjobYear.value = myData.JYear;
+                        txtjobType.value = myData.type;
+                        txtPartyId.value = myData.partyid;
+                        txtPartyName.value = myData.Party;
+                        txtdebitCode.value = myData.AccountNo;
+                        txtRemarks.value = myData.remarks;
+                        txtAmount.value = myData.amount;
+
+
+                        txtINSTIME.value = myData.InsTime;
+                        txtINSIPNO.value = myData.InsIPNo;
+                        txtINSLTUDE.value = myData.InslTude;
+                        txtINSUSERID.value = myData.InUserId;                  
+                    
+                    
+                    });
+
+                $("#txtidJobYear").val(" ");
+                $("#txtidJobType").val(" ");
+
+                $("#txtidPartyName").val(" ");
+                $("#txtidTransDate").val(" ");
+                $("#txtidTransYear").val(" ");
+                $("#txtidTransFor").val(" ");
+                $("#txtidJobNo").val(" ");
+                $("#txtidDebitCD").val(" ");
+                $("#txtidRemarks").val(" ");
+                $("#txtidAmount").val(" ");
+
+            });
+        });
+    </script>
+
+}
+
+
+@*@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}*@
+
+

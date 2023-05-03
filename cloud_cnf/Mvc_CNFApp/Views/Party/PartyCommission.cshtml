@@ -1,0 +1,523 @@
+﻿@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.PageModel
+
+
+@{
+    ViewBag.Title = "PartyCommission";
+
+    if (HttpContext.Current.Session["LoggedUserType"] == null)
+    {
+        Response.Redirect(Url.Action("Index", "Login"));
+    }
+
+    var LoggedUserTp = HttpContext.Current.Session["LoggedUserType"].ToString();
+    var LoggedUserStatus = HttpContext.Current.Session["LoggedUserStatus"].ToString();
+    var LoggedCompanyStatus = HttpContext.Current.Session["LoggedCompanyStatus"].ToString();
+
+    if ((LoggedUserTp == "CompanyAdmin" || LoggedUserTp == "UserAdmin" || LoggedUserTp == "User") && LoggedUserStatus == "A" && LoggedCompanyStatus == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+
+    Int64 LoggedCompId = Convert.ToInt64(HttpContext.Current.Session["loggedCompID"].ToString());
+    CnfDbContext db = new CnfDbContext();
+    //Party Name: [ ] , Login ID Field loaded in DropdownList
+
+
+
+    List<SelectListItem> listAccountName = new List<SelectListItem>();
+    var result = (from n in db.GlAcchartDbSet
+                  where n.COMPID == LoggedCompId
+                  select n).ToList();
+
+    foreach (var n in result)
+    {
+        GL_ACCHART aGlAcchart = db.GlAcchartDbSet.FirstOrDefault(e => e.ACCOUNTCD == n.ACCOUNTCD);
+        string substring = Convert.ToString(aGlAcchart.ACCOUNTCD);
+        string subres = substring.Substring(3, 3);
+        if (subres == "103")
+        {
+            listAccountName.Add(new SelectListItem { Text = aGlAcchart.ACCOUNTNM, Value = aGlAcchart.ACCOUNTCD.ToString() });
+        }
+
+    }
+
+
+    //Value Type
+    List<SelectListItem> listValueType = new List<SelectListItem>();
+    listValueType.Add(new SelectListItem { Text = "Percentage", Value = "Percentage" });
+    listValueType.Add(new SelectListItem { Text = "Amount", Value = "Amount" });
+
+    List<SelectListItem> listexchangetype = new List<SelectListItem>();
+    listexchangetype.Add(new SelectListItem { Text = "BDT", Value = "BDT" });
+    listexchangetype.Add(new SelectListItem { Text = "USD", Value = "USD" });
+    listexchangetype.Add(new SelectListItem { Text = "EURO", Value = "EURO" });
+}
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    @Html.ValidationSummary(true)
+
+    @Html.HiddenFor(model => model.ACnfCommission.COMPID, new { id = "txtCompId", @Value = LoggedCompId })
+
+    <div id="contentHeaderBox">
+        <h1 style="padding-left:16px">Party Wise Commission</h1>
+    </div>
+    <br />
+    <div class="col-md-12">
+        <div class="form-group">
+            <div class="row">
+                @*<div class="col-md-1"></div>*@
+                <div class="col-md-2">@Html.Label("Party Name", htmlAttributes: new { @class = "control-label" })</div>
+                <div class="col-md-4">
+                    @Html.DropDownListFor(model => model.AGL_acchart.ACCOUNTCD, listAccountName, "-Select Party-", new { @class = "form-control", id = "ddlAccountCD",autofocus=true })
+                    @*@if (ViewBag.CategoryMsg != null)
+                        {
+                            <h6 style="color: #C03523">@ViewBag.CategoryMsg <i style="color: #C03523" class="fa fa-question-circle fa-2x"></i></h6>
+
+                        }*@
+                </div>
+                <div class="col-md-1"></div>
+                <div class="col-md-2 text-center">@Html.LabelFor(model => model.HeadType, htmlAttributes: new { @class = "control-label" })</div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.HeadType, new { @class = "form-control", id = "txtHeadType", @readonly = "readonly" })
+                </div>
+                <input type="submit" class="btn btn-info" value="Search" name="command" id="btnSearch" style="display: none" />
+            </div>
+            @*<br />
+                <div class="row">
+                    <div class="col-md-1"></div>
+                    <div class="col-md-2 text-center">@Html.LabelFor(model => model.HeadType, htmlAttributes: new { @class = "control-label" })</div>
+                    <div class="col-md-6">
+                        @Html.TextBoxFor(model => model.HeadType, new { @class = "form-control", id = "txtHeadType", @readonly = "readonly" })
+                    </div>
+                    <div class="col-md-3">
+                        <input type="submit" class="btn btn-info" value="Search" name="command" id="btnSearch" style="display: none" />
+                    </div>
+                </div>*@
+        </div>
+
+        @if (TempData["Partycommmessage"] != null)
+        {
+            <div class="text-center">
+                <h5 style="color: #BD7F1C">@TempData["Partycommmessage"] </h5>
+            </div>
+            <br />
+        }
+
+        <div>
+            <hr />
+        </div>
+
+    </div>
+
+
+    <br />
+    <div class="col-md-12">
+        <div class="row">
+            <div class="row">
+                @if (TempData["partyId"] != null)
+                {
+                    <div class="col-md-12">
+                        @Html.HiddenFor(model => model.ACnfCommission.COMPID, new { @readonly = "readonly" })
+                        @Html.HiddenFor(model => model.ACnfCommission.PARTYID, new { @readonly = "readonly" })
+                        @Html.HiddenFor(model => model.ACnfCommission.COMMSL, new { @readonly = "readonly" })
+                        <div class="col-md-2">
+                            <span>  @Html.Label("name", "Exchange Type", htmlAttributes: new { @class = "control-label" })</span>
+                            @Html.DropDownListFor(model => model.ACnfCommission.EXCTP, listexchangetype, "-Select-", new { @class = "form-control" })
+                        </div>
+                        <div class="col-md-2">
+                            <span>  @Html.Label("name", "Value From", htmlAttributes: new { @class = "control-label" })</span>
+                            @Html.TextBoxFor(model => model.ACnfCommission.VALUEFR, new { @class = "form-control" })
+                        </div>
+                        <div class="col-md-2">
+                            <span>  @Html.Label("name", "Value To", htmlAttributes: new { @class = "control-label" })</span>
+                            @Html.TextBoxFor(model => model.ACnfCommission.VALUETO, new { @class = "form-control" })
+                        </div>
+                        <div class="col-md-2">
+                            <span>  @Html.Label("name", "Value Type", htmlAttributes: new { @class = "control-label" })</span>
+                            @Html.DropDownListFor(model => model.ACnfCommission.VALUETP, listValueType, "-Select-", new { @class = "form-control" })
+                        </div>
+                        <div class="col-md-2">
+                            <span>  @Html.Label("name", "Rate", htmlAttributes: new { @class = "control-label" })</span>
+                            @Html.TextBoxFor(model => model.ACnfCommission.COMMAMT, new { @class = "form-control" })
+                        </div>
+
+                        @if (TempData["ShowUpdateButton"] != null)
+                        {
+                            <div class="col-md-2">
+                                <input type="submit" class="btn btn-info" value="Update" id="btnUpdate" name="command" style="margin-top:25px; margin-left:5px" />
+                            </div>
+                        }
+
+                        else
+                        {
+                            <div class="col-md-2">
+                                <input type="submit" class="btn btn-info" value="Add" id="btnAdd" name="command" style="margin-top:25px; margin-left:5px" />
+                            </div>
+                        }
+                    </div>
+
+                    if (ViewBag.NullFieldMessage != null)
+                    {
+                        <div class="col-md-12">
+                            <div class="col-md-9"></div>
+                            <div class="col-md-3"><h6 style="color: Red">@ViewBag.NullFieldMessage</h6></div>
+                        </div>
+                    }
+                }
+            </div>
+
+            @Html.TextBoxFor(model => model.ACnfCommission.INSLTUDE, new { id = "latlon", style = "display: none;" })
+            <input id="lat" type="hidden" />
+            <input id="lon" type="hidden" />
+
+            <br />
+            @if (TempData["partyId"] != null)
+            {
+
+                var partyID = Convert.ToInt64(TempData["partyId"]);
+                Int64 LogCompId = Convert.ToInt64(HttpContext.Current.Session["loggedCompID"]);
+                var res = db.CnfCommissionDbSet.Where(d => d.PARTYID == partyID && d.COMPID == LogCompId).OrderBy(d => d.COMMSL).ToList();
+                <div class="panel panel-primary">
+                    @*<div class="panel-heading">Companies User Information</div>*@
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <tr>
+                                <td align="center">
+                                    <h6>SL</h6>
+                                </td>
+                                <td>
+                                    <h6>Exchange Type</h6>
+                                </td>
+                                <td>
+                                    <h6>Value For</h6>
+                                </td>
+                                <td>
+                                    <h6>Value To</h6>
+                                </td>
+                                <td>
+                                    <h6>Value Type</h6>
+                                </td>
+                                <td>
+                                    <h6>Rate</h6>
+                                </td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+
+                            @foreach (var item in res)
+                            {
+                                <tr>
+                                    @Html.HiddenFor(model => item.Cnf_ComissionID, new { style = "width:3em;", @readonly = "readonly" })
+                                    @Html.HiddenFor(model => item.COMPID, new { style = "width:3em;", @readonly = "readonly" })
+                                    @Html.HiddenFor(model => item.PARTYID, new { style = "width:3em;", @readonly = "readonly" })
+
+                                    <td align="center">
+                                        @*@Html.TextBoxFor(model => item.ITEMNM, new { style = "width:10em;", id = "txtItemNm", @readonly = "readonly" })*@
+                                        @Html.DisplayFor(model => item.COMMSL, new { style = "width:10em;", @readonly = "readonly" })
+                                    </td>
+                                    <td>
+                                        @*@Html.TextBoxFor(model => item.BRAND, new { style = "width:6em;", id = "txtBrand", @readonly = "readonly" })*@
+                                        @Html.DisplayFor(model => item.EXCTP, new { style = "width:6em;", @readonly = "readonly" })
+                                    </td>
+                                    <td>
+                                        @*@Html.TextBoxFor(model => item.UNIT, new { style = "width:2em;", id = "txtUnit", @readonly = "readonly" })*@
+                                        @Html.DisplayFor(model => item.VALUEFR, new { style = "width:2em;", @readonly = "readonly" })
+                                    </td>
+                                    <td>
+                                        @*@Html.TextBoxFor(model => item.BUYRT, new { style = "width:6em; text-align:right", id = "txtBuyRT", @readonly = "readonly" })*@
+                                        @Html.DisplayFor(model => item.VALUETO, new { style = "width:6em; text-align:right", @readonly = "readonly" })
+                                    </td>
+                                    <td>
+                                        @*@Html.TextBoxFor(model => item.SALRT, new { style = "width:6em; text-align:right", id = "txtSalRt", @readonly = "readonly" })*@
+                                        @Html.DisplayFor(model => item.VALUETP, new { style = "width:6em; text-align:right", @readonly = "readonly" })
+                                    </td>
+                                    <td>
+                                        @*@Html.TextBoxFor(model => item.STKMIN, new { style = "width:6em;", id = "txtStockMin", @readonly = "readonly" })*@
+                                        @Html.DisplayFor(model => item.COMMAMT, new { style = "width:6em;", @readonly = "readonly" })
+                                    </td>
+
+                                    <td>
+                                        <span>
+                                            <a href="@Url.Action("CommissionUpdate", new { id=item.Cnf_ComissionID,cid = item.COMPID, partyID = item.PARTYID, Serial=item.COMMSL})" class="btn btn-sm btn-info">
+                                                <span class="glyphicon glyphicon-pencil"></span>
+                                            </a>
+                                        </span>
+
+
+                                    </td>
+                                    <td>
+                                        <span>
+                                            <a href="@Url.Action("CommissionDelete", new { id = item.Cnf_ComissionID, cid = item.COMPID, partyID = item.PARTYID, Serial = item.COMMSL })" class="btn btn-sm btn-danger">
+                                                <span class="glyphicon glyphicon-remove"></span>
+                                            </a>
+                                        </span>
+
+                                    </td>
+
+                                </tr>
+
+                            }
+
+                        </table>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped"></table>
+                </div>
+            }
+        </div>
+    </div>
+
+
+
+
+    @*<div class="container">
+            <div class="row">
+
+                <div class="col-md-12">
+                    <div class="panel panel-info" style="padding: 0px; margin-bottom: 0px;">
+                        <div class="panel-heading text-center">
+                            <h4>Party Wise Commission</h4>
+                        </div>
+                    </div>
+
+                    <div class="jumbotron" style="padding-top: 20px; padding-bottom: 11px">
+                        <div class="form-group">
+                            <div class="row">
+
+                                <div class="col-md-2 text-center">@Html.Label("Party Name", htmlAttributes: new { @class = "control-label" })</div>
+                                <div class="col-md-4">
+                                    @Html.DropDownListFor(model => model.AGL_acchart.ACCOUNTCD, listAccountName, "-Select Party-", new { @class = "form-control", id = "ddlAccountCD" })
+
+                                </div>
+                                <div class="col-md-1"></div>
+                                <div class="col-md-2 text-center">@Html.LabelFor(model => model.HeadType, htmlAttributes: new { @class = "control-label" })</div>
+                                <div class="col-md-3">
+                                    @Html.TextBoxFor(model => model.HeadType, new { @class = "form-control", id = "txtHeadType", @readonly = "readonly" })
+                                </div>
+                                <input type="submit" class="btn btn-info" value="Search" name="command" id="btnSearch" style="display: none" />
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (TempData["message"] != null)
+            {
+                <div class="text-center">
+                    <h5 style="color: #BD7F1C">@TempData["message"] </h5>
+                </div>
+                <br />
+            }
+
+            <div class="row">
+                <div class="row">
+                    @if (TempData["partyId"] != null)
+                    {
+                        <div class="col-md-12">
+                            @Html.HiddenFor(model => model.ACnfCommission.COMPID, new { @readonly = "readonly" })
+                            @Html.HiddenFor(model => model.ACnfCommission.PARTYID, new { @readonly = "readonly" })
+                            @Html.HiddenFor(model => model.ACnfCommission.COMMSL, new { @readonly = "readonly" })
+                            <div class="col-md-2">
+                                <span>  @Html.Label("name", "Exchange Type", htmlAttributes: new { @class = "control-label" })</span>
+                                @Html.DropDownListFor(model => model.ACnfCommission.EXCTP, listexchangetype, "-Select-", new { @class = "form-control" })
+                            </div>
+                            <div class="col-md-2">
+                                <span>  @Html.Label("name", "Value From", htmlAttributes: new { @class = "control-label" })</span>
+                                @Html.TextBoxFor(model => model.ACnfCommission.VALUEFR, new { @class = "form-control" })
+                            </div>
+                            <div class="col-md-2">
+                                <span>  @Html.Label("name", "Value To", htmlAttributes: new { @class = "control-label" })</span>
+                                @Html.TextBoxFor(model => model.ACnfCommission.VALUETO, new { @class = "form-control" })
+                            </div>
+                            <div class="col-md-2">
+                                <span>  @Html.Label("name", "Value Type", htmlAttributes: new { @class = "control-label" })</span>
+                                @Html.DropDownListFor(model => model.ACnfCommission.VALUETP, listValueType, "-Select-", new { @class = "form-control" })
+                            </div>
+                            <div class="col-md-2">
+                                <span>  @Html.Label("name", "Rate", htmlAttributes: new { @class = "control-label" })</span>
+                                @Html.TextBoxFor(model => model.ACnfCommission.COMMAMT, new { @class = "form-control" })
+                            </div>
+
+                            @if (TempData["ShowUpdateButton"] != null)
+                            {
+                                <div class="col-md-2">
+                                    <input type="submit" class="btn btn-info" value="Update" id="btnUpdate" name="command" style="margin-top:25px; margin-left:5px" />
+                                </div>
+                            }
+
+                            else
+                            {
+                                <div class="col-md-2">
+                                    <input type="submit" class="btn btn-info" value="Add" id="btnAdd" name="command" style="margin-top:25px; margin-left:5px" />
+                                </div>
+                            }
+                        </div>
+
+                        if (ViewBag.NullFieldMessage != null)
+                        {
+                            <div class="col-md-12">
+                                <div class="col-md-9"></div>
+                                <div class="col-md-3"><h6 style="color: Red">@ViewBag.NullFieldMessage</h6></div>
+                            </div>
+                        }
+                    }
+                </div>
+
+                @Html.TextBoxFor(model => model.ACnfCommission.INSLTUDE, new { id = "latlon", style = "display: none;" })
+                <input id="lat" type="hidden" />
+                <input id="lon" type="hidden" />
+
+                <br />
+                @if (TempData["partyId"] != null)
+                {
+
+                    var partyID = Convert.ToInt64(TempData["partyId"]);
+                    Int64 LogCompId = Convert.ToInt64(HttpContext.Current.Session["loggedCompID"]);
+                    var res = db.CnfCommissionDbSet.Where(d => d.PARTYID == partyID && d.COMPID == LogCompId).OrderBy(d => d.COMMSL).ToList();
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <tr>
+                                <td>
+                                    <h6>SL</h6>
+                                </td>
+                                <td>
+                                    <h6>Exchange Type</h6>
+                                </td>
+                                <td>
+                                    <h6>Value For</h6>
+                                </td>
+                                <td>
+                                    <h6>Value To</h6>
+                                </td>
+                                <td>
+                                    <h6>Value Type</h6>
+                                </td>
+                                <td>
+                                    <h6>Rate</h6>
+                                </td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+
+                            @foreach (var item in res)
+                            {
+                                <tr>
+                                    @Html.HiddenFor(model => item.Cnf_ComissionID, new { style = "width:3em;", @readonly = "readonly" })
+                                    @Html.HiddenFor(model => item.COMPID, new { style = "width:3em;", @readonly = "readonly" })
+                                    @Html.HiddenFor(model => item.PARTYID, new { style = "width:3em;", @readonly = "readonly" })
+
+                                    <td>
+
+                                        @Html.DisplayFor(model => item.COMMSL, new { style = "width:10em;", @readonly = "readonly" })
+                                    </td>
+                                    <td>
+
+                                        @Html.DisplayFor(model => item.EXCTP, new { style = "width:6em;", @readonly = "readonly" })
+                                    </td>
+                                    <td>
+
+                                        @Html.DisplayFor(model => item.VALUEFR, new { style = "width:2em;", @readonly = "readonly" })
+                                    </td>
+                                    <td>
+
+                                        @Html.DisplayFor(model => item.VALUETO, new { style = "width:6em; text-align:right", @readonly = "readonly" })
+                                    </td>
+                                    <td>
+
+                                        @Html.DisplayFor(model => item.VALUETP, new { style = "width:6em; text-align:right", @readonly = "readonly" })
+                                    </td>
+                                    <td>
+
+                                        @Html.DisplayFor(model => item.COMMAMT, new { style = "width:6em;", @readonly = "readonly" })
+                                    </td>
+
+                                    <td>
+                                        <span>
+                                            <a href="@Url.Action("CommissionUpdate", new { id=item.Cnf_ComissionID,cid = item.COMPID, partyID = item.PARTYID, Serial=item.COMMSL})" class="btn btn-sm btn-info">
+                                                <span class="glyphicon glyphicon-pencil"></span>
+                                            </a>
+                                        </span>
+
+
+                                    </td>
+                                    <td>
+                                        <span>
+                                            <a href="@Url.Action("CommissionDelete", new { id = item.Cnf_ComissionID, cid = item.COMPID, partyID = item.PARTYID, Serial = item.COMMSL })" class="btn btn-sm btn-danger">
+                                                <span class="glyphicon glyphicon-remove"></span>
+                                            </a>
+                                        </span>
+
+                                    </td>
+
+                                </tr>
+
+                            }
+
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped"></table>
+                    </div>
+                }
+            </div>
+
+
+
+        </div>*@
+
+    <script type="text/javascript">
+        $(function () {
+            navigator.geolocation.getCurrentPosition(showPosition);
+
+            function showPosition(position) {
+                var coordinates = position.coords;
+                $("#lat").val(coordinates.latitude);
+                $("#lon").val(coordinates.longitude);
+
+                $("#latlon").val(
+                                    $("#lat").val() + "," + $("#lon").val()
+                                );
+            }
+            //function positionError(position) {
+            //    alert("!!! Error: "+position.code);
+            //}
+        });
+
+
+
+        $(document).ready(function () {
+            $('#ddlAccountCD').change(function () {
+                var changedDropDown = $('#ddlAccountCD option:selected').val();
+
+                var txtHeadType = document.getElementById('txtHeadType');
+                $.getJSON(
+                    "/Party/GetHeadType", { "ChangedDropDown": changedDropDown },
+                    function (myData) {
+                        txtHeadType.value = myData.HEADTP;
+                        $('#btnSearch').click();
+                    });
+
+                $("#txtHeadType").val("");
+            });
+
+
+        });
+
+
+    </script>
+}

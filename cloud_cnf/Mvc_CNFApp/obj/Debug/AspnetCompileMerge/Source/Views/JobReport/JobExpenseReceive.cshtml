@@ -1,0 +1,300 @@
+﻿@using System.Web.UI.WebControls
+@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.PageModel
+
+
+@{
+    ViewBag.Title = "Job At A Glance Index";
+    if (HttpContext.Current.Session["LoggedUserType"] == null)
+    {
+        Response.Redirect(Url.Action("Index", "Login"));
+    }
+
+    var LoggedUserTp = HttpContext.Current.Session["LoggedUserType"].ToString();
+    var LoggedUserStatus = HttpContext.Current.Session["LoggedUserStatus"].ToString();
+    var LoggedCompanyStatus = HttpContext.Current.Session["LoggedCompanyStatus"].ToString();
+
+
+
+    if ((LoggedUserTp == "CompanyAdmin" || LoggedUserTp == "UserAdmin" || LoggedUserTp == "User") && LoggedUserStatus == "A" && LoggedCompanyStatus == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+
+    var LoggedCompId = HttpContext.Current.Session["loggedCompID"].ToString();
+
+    Int64 compid = Convert.ToInt64(System.Web.HttpContext.Current.Session["loggedCompID"]);
+    //permission check
+
+    Int64 loggedUserID = Convert.ToInt64(HttpContext.Current.Session["loggedUserID"].ToString());
+
+    CnfDbContext db = new CnfDbContext();
+    var permission_Check = from m in db.AslRoleDbSet
+                           where m.COMPID == compid && m.USERID == loggedUserID
+                               && m.CONTROLLERNAME == "JobReport" && m.ACTIONNAME == "JobExpenseReceive"
+                           select m;
+    var Status = "";
+    foreach (var check in permission_Check)
+    {
+        Status = check.STATUS;
+    }
+
+    if (Status == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+}
+<link href="~/Content/bootstrap%20datepicker%20css/datepicker.css" rel="stylesheet" />
+<link href="~/Content/bootstrap%20datepicker%20css/datepicker3.css" rel="stylesheet" />
+
+<script src="~/Scripts/bootstrap-datepicker.js"></script>
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    @Html.ValidationSummary(true)
+
+    @Html.HiddenFor(model => model.ACnfJobbill.COMPID, new { id = "txtCompId", @Value = LoggedCompId })
+
+
+
+
+
+
+
+    List<SelectListItem> listJobNo = new List<SelectListItem>();
+    //var resultJobNo = (db.CnfJobDbSet.Join(db.GlAcchartDbSet, cnfjob => cnfjob.COMPID, glacchart => glacchart.COMPID,
+    //    (cnfjob, glacchart) => new { cnfjob, glacchart })
+    //    .Where(@t => @t.cnfjob.PARTYID == @t.glacchart.ACCOUNTCD && @t.cnfjob.COMPID == compid)
+    //    .Select(@t => new { @t.cnfjob.JOBNO, @t.cnfjob.JOBYY, @t.cnfjob.JOBTP, @t.glacchart.ACCOUNTNM, @t.cnfjob.Cnf_JobID }).OrderBy(@t => @t.JOBNO).ThenByDescending(@t => @t.JOBYY));
+
+    var resultJobNo = (from n in db.CnfJobDbSet where n.COMPID == compid select n).ToList();
+    
+    foreach (var n in resultJobNo)
+    {
+        //CNF_JOB acCnfJob = db.CnfJobDbSet.FirstOrDefault(e => e.Cnf_JobID == n.Cnf_JobID);
+        if (n != null)
+        {
+            listJobNo.Add(new SelectListItem { Text = (n.JOBNO.ToString() + " | " + n.JOBYY.ToString() + " | " + n.JOBTP + " | " + n.PartyName.ToString()), Value = n.Cnf_JobID.ToString() });
+        }
+    }
+
+
+    List<SelectListItem> listExpNm = new List<SelectListItem>();
+    var resultExpenseName = (from n in db.CnfExpenseDbSet where n.COMPID == compid select n).ToList();
+    foreach (var n in resultExpenseName)
+    {
+        CNF_EXPENSE aCnfExpense = db.CnfExpenseDbSet.FirstOrDefault(e => e.EXPID == n.EXPID);
+        if (aCnfExpense != null)
+        {
+            listExpNm.Add(new SelectListItem { Text = (aCnfExpense.EXPNM), Value = aCnfExpense.EXPID.ToString() });
+        }
+    }
+
+    <div id="contentHeaderBox">
+        <h1 style="padding-left:16px">Job Expense/Receive</h1>
+    </div>
+    <br />
+    <div class="col-md-12">
+        <div class="form-group">
+            <div class="row">
+                <div class="col-md-1">
+                    @Html.Label("name", "Job No", htmlAttributes: new { @class = "control-label " })
+                </div>
+                <div class="col-md-4">
+                    @Html.DropDownListFor(model => model.ACnfJob.Cnf_JobID, listJobNo, "--Select--", htmlAttributes: new { id = "textidJobNo", @class = "form-control input-sm", autofocus = true })
+                </div>
+
+                <div class="col-md-1">
+                    @*@Html.LabelFor(model => model.ACnfJobbill.JOBYY, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("name", "Year", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-2">
+                    @Html.TextBoxFor(model => model.ACnfJobbill.JOBYY, new { @class = "form-control input-sm", id = "textidJobYY", @readonly = "readonly" })
+                </div>
+                <div class="col-md-1">
+                    @*@Html.LabelFor(model => model.ACnfJobbill.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("Name", "Type", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-2">
+                    @Html.TextBoxFor(model => model.ACnfJobbill.JOBTP, new { @class = "form-control input-sm", id = "textidJobTP", @readonly = "readonly" })
+                </div>
+            </div>
+            <br />
+            @*@Html.TextBoxFor(model => model.INSLTUDE, new { id = "latlonPos", style = "display: none;" })*@
+
+            <input id="lat" type="hidden" />
+            <input id="lon" type="hidden" />
+
+            <div class="row">
+                <div class="col-md-2">
+                    @Html.Label("Party Name", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @if (TempData["PartyName"] != null)
+                    {
+                        @Html.TextBoxFor(model => model.ACnfJobbill.PARTYNM, new { @class = "form-control input-sm", id = "textidPartyNm", @Value = TempData["PartyName"], @readonly = "readonly" })
+                    }
+                    else
+                    {
+                        @Html.TextBoxFor(model => model.ACnfJobbill.PARTYNM, new { @class = "form-control input-sm", id = "textidPartyNm", @readonly = "readonly" })
+                        @*@Html.ValidationMessageFor(model => model.HEADNM, "", new { @class = "text-danger" })*@
+                    }
+                </div>
+                <div class="col-md-4"><br /></div>
+                <div class="col-md-3" align="center">
+                    <input type="submit" class="btn btn-success" value="Print" name="command" formtarget="_blank" />
+                </div>
+            </div>
+            @*<input id="SearchButtonID" type="submit" class="btn btn-info" value="Submit" name="command" style="display: none" />*@
+        </div>
+
+    </div>
+
+
+
+
+    @*<div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="panel panel-info" style="padding: 0px; margin-bottom: 0px;">
+                        <div class="panel-heading text-center">
+                            <h4>Job At A Glance</h4>
+                        </div>
+                    </div>
+
+                    <div class="jumbotron" style="padding-top: 20px; padding-bottom: 11px">
+                        <div class="form-group">
+                            <div class="row">
+                                <div class="col-md-1">
+                                    @Html.Label("name", "Job No", htmlAttributes: new { @class = "control-label " })
+                                </div>
+                                <div class="col-md-4">
+                                    @Html.DropDownListFor(model => model.ACnfJob.Cnf_JobID, listJobNo, "--Select--", htmlAttributes: new { id = "textidJobNo", @class = "form-control input-sm" })
+                                </div>
+
+                                <div class="col-md-1">
+                                    @Html.LabelFor(model => model.ACnfJobbill.JOBYY, htmlAttributes: new { @class = "control-label" })
+                                </div>
+                                <div class="col-md-2">
+                                    @Html.TextBoxFor(model => model.ACnfJobbill.JOBYY, new { @class = "form-control input-sm", id = "textidJobYY", @readonly = "readonly" })
+                                </div>
+                                <div class="col-md-1">
+                                    @Html.LabelFor(model => model.ACnfJobbill.JOBTP, htmlAttributes: new { @class = "control-label" })
+                                </div>
+                                <div class="col-md-2">
+                                    @Html.TextBoxFor(model => model.ACnfJobbill.JOBTP, new { @class = "form-control input-sm", id = "textidJobTP", @readonly = "readonly" })
+                                </div>
+                            </div>
+                            <br />
+
+
+                            <input id="lat" type="hidden" />
+                            <input id="lon" type="hidden" />
+
+                            <div class="row">
+                                <div class="col-md-2">
+                                    @Html.Label("Party Name", htmlAttributes: new { @class = "control-label" })
+                                </div>
+                                <div class="col-md-3">
+                                    @if (TempData["PartyName"] != null)
+                                    {
+                                        @Html.TextBoxFor(model => model.ACnfJobbill.PARTYNM, new { @class = "form-control input-sm", id = "textidPartyNm", @Value = TempData["PartyName"], @readonly = "readonly" })
+                                    }
+                                    else
+                                    {
+                                        @Html.TextBoxFor(model => model.ACnfJobbill.PARTYNM, new { @class = "form-control input-sm", id = "textidPartyNm", @readonly = "readonly" })
+
+                                    }
+                                </div>
+                                <div class="col-md-5"><br /></div>
+                                <div class="col-md-2" align="right">
+                                    <input type="submit" class="btn btn-success" value="Print" name="command" />
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+
+
+
+
+
+        </div>*@
+
+
+
+
+
+    <script type="text/javascript">
+        $('#textidJobNo').change(function () {
+
+            var changedtxt = $('#textidJobNo').val();
+
+            var txtjobYear = document.getElementById('textidJobYY');
+            var txtjobType = document.getElementById('textidJobTP');
+            //var txtpartId = document.getElementById('textidPartyID');
+            var txtPartyName = document.getElementById('textidPartyNm');
+
+            $("#textidJobYY").val(" ");
+            $("#textidJobTP").val(" ");
+            //$("#textidPartyID").val(" ");
+            $("#textidPartyNm").val(" ");
+
+            $.getJSON(
+                "/JobBillInfo/JobNoChanged_getJobinfo", { "Changedtxt": changedtxt },
+                function (myData) {
+                    txtjobYear.value = myData.Year;
+                    txtjobType.value = myData.Type;
+                    txtPartyName.value = myData.Party;
+
+                    $('#SearchButtonID').click();
+                });
+
+        });
+    </script>
+
+    //Latitute & longitude
+    <script src="http://maps.google.com/maps/api/js?sensor=false">
+    </script>
+
+    @*<script language="javascript" type="text/javascript">
+            $(function () {
+                navigator.geolocation.getCurrentPosition(showPosition);
+                //navigator.geolocation.getCurrentPosition(showPosition, positionError);
+
+                function showPosition(position) {
+                    var coordinates = position.coords;
+                    $("#lat").val(coordinates.latitude);
+                    $("#lon").val(coordinates.longitude);
+
+                    $("#latlonPos").val(
+                        $("#lat").val() + "," + $("#lon").val()
+                    );
+                    $("#latlonRms").val(
+                        $("#lat").val() + "," + $("#lon").val()
+                    );
+                }
+            });
+        </script>*@
+
+}
+
+<link href="~/Content/themes/base/jquery-ui.css" rel="stylesheet" />
+@*<link href="~/Content/jquery.jqGrid/ui.jqgrid.css" rel="stylesheet" />*@
+<script src="~/Scripts/jquery-1.9.1.min.js"></script>
+<script src="~/Scripts/jquery-ui-1.10.4.min.js"></script>
+

@@ -1,0 +1,180 @@
+﻿@using System.Net.Mime
+@using System.Web.UI.WebControls
+@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.PageModel
+
+@{
+    ViewBag.Title = "PartyLedger";
+    if (HttpContext.Current.Session["LoggedUserType"] == null)
+    {
+        Response.Redirect(Url.Action("Index", "Login"));
+    }
+
+    var LoggedUserTp = HttpContext.Current.Session["LoggedUserType"].ToString();
+    var LoggedUserStatus = HttpContext.Current.Session["LoggedUserStatus"].ToString();
+    var LoggedCompanyStatus = HttpContext.Current.Session["LoggedCompanyStatus"].ToString();
+
+    if ((LoggedUserTp == "CompanyAdmin" || LoggedUserTp == "UserAdmin" || LoggedUserTp == "User") && LoggedUserStatus == "A" && LoggedCompanyStatus == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+
+    Int64 compid = Convert.ToInt64(System.Web.HttpContext.Current.Session["loggedCompID"]);
+    CnfDbContext db = new CnfDbContext();
+
+    List<SelectListItem> listPartyName = new List<SelectListItem>();
+    var result = (from n in db.GlAcchartDbSet
+                  where n.COMPID == compid
+                  select n).ToList();
+    foreach (var n in result)
+    {
+        if (n != null)
+        {
+            string substring = Convert.ToString(n.ACCOUNTCD);
+            string subres = substring.Substring(3, 3);
+            if (subres == "103")
+            {
+                listPartyName.Add(new SelectListItem { Text = n.ACCOUNTNM, Value = n.ACCOUNTCD.ToString() });
+            }
+        }
+    }
+
+
+    TimeZoneInfo timeZoneInfo;
+    timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Central Asia Standard Time");
+    DateTime currentDateTime = TimeZoneInfo.ConvertTime(DateTime.Now, timeZoneInfo);
+
+    //permission check
+
+    Int64 loggedUserID = Convert.ToInt64(HttpContext.Current.Session["loggedUserID"].ToString());
+
+
+    var permission_Check = from m in db.AslRoleDbSet
+                           where m.COMPID == compid && m.USERID == loggedUserID
+                               && m.CONTROLLERNAME == "JobReport" && m.ACTIONNAME == "PartyLedger"
+                           select m;
+    var Status = "";
+    foreach (var check in permission_Check)
+    {
+        Status = check.STATUS;
+    }
+
+    if (Status == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+
+
+
+}
+
+<link href="~/Content/bootstrap%20datepicker%20css/datepicker.css" rel="stylesheet" />
+<link href="~/Content/bootstrap%20datepicker%20css/datepicker3.css" rel="stylesheet" />
+
+<script src="~/Scripts/bootstrap-datepicker.js"></script>
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    @Html.ValidationSummary(true)
+
+    @Html.HiddenFor(model => model.ACnfJobrcv.COMPID, new { id = "txtCompId", @Value = compid })
+
+    <div id="contentHeaderBox">
+        <h1 style="padding-left:16px">Party Ledger</h1>
+    </div>
+    <br />
+    <div class="col-md-12">
+        <div class="form-group">
+            <div class="row">
+
+                <div class="col-md-2">
+                    <span>@Html.Label("name", "From", htmlAttributes: new { @class = "control-label" })</span>
+                    @Html.TextBoxFor(model => model.FromDate, new { @class = "form-control input-sm", id = "txtFormid", @Value = currentDateTime.ToString("dd-MMM-yyyy"), autofocus = true })
+                </div>
+
+                <div class="col-md-2">
+                    <span>@Html.Label("name", "To", htmlAttributes: new { @class = "control-label" })</span>
+                    @Html.TextBoxFor(model => model.ToDate, new { @class = "form-control input-sm", id = "txtToid", @Value = currentDateTime.ToString("dd-MMM-yyyy") })
+                </div>
+                <div class="col-md-5">
+                    <span>@Html.Label("name", "Party Name", htmlAttributes: new { @class = "control-label" })</span>
+                    @Html.DropDownListFor(model => model.ACnfJobrcv.PARTYID, listPartyName, "-Select-", new { @class = "form-control input-sm", id = "txtexpnm" })
+                </div>
+
+                <div class="col-md-1">
+                    <span><br /></span>
+                    <input type="submit" class="btn btn-primary" value="Only Bill" name="command" formtarget="_blank" />
+                </div>
+                <div class="col-md-1">
+                   
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-9"></div>
+                <div class="col-md-1">
+                    <input type="submit" class="btn btn-primary" value="Ledger" name="command" formtarget="_blank" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script type="text/javascript">
+        $('#txtFormid').datepicker({
+            format: "dd-M-yyyy",
+            autoclose: true,
+            todayHighlight: true
+            //format: "yyyy-M-dd"
+        }).on('show', function (e) {
+            if (e.date) {
+                $(this).data('stickyDate', e.date);
+            }
+            else {
+                $(this).data('stickyDate', null);
+            }
+        }).on('hide', function (e) {
+            var stickyDate = $(this).data('stickyDate');
+
+            if (!e.date && stickyDate) {
+                $(this).datepicker('setDate', stickyDate);
+                $(this).data('stickyDate', null);
+            }
+            document.getElementById("txtToid").focus();
+        });
+
+        $('#txtToid').datepicker({
+            format: "dd-M-yyyy",
+            autoclose: true,
+            todayHighlight: true
+            //format: "yyyy-M-dd"
+        }).on('show', function (e) {
+            if (e.date) {
+                $(this).data('stickyDate', e.date);
+            }
+            else {
+                $(this).data('stickyDate', null);
+            }
+        }).on('hide', function (e) {
+            var stickyDate = $(this).data('stickyDate');
+
+            if (!e.date && stickyDate) {
+                $(this).datepicker('setDate', stickyDate);
+                $(this).data('stickyDate', null);
+            }
+            document.getElementById("txtexpnm").focus();
+        });
+    </script>
+}
+
+
+

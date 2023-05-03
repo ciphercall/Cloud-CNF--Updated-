@@ -1,0 +1,1198 @@
+﻿@using System.Data
+@using System.Data.SqlClient
+@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.CNF_JOB
+
+@{
+    ViewBag.Title = "FirstPartUpdate";
+
+    if (HttpContext.Current.Session["LoggedUserType"] == null)
+    {
+        Response.Redirect(Url.Action("Index", "Login"));
+    }
+
+    var LoggedUserTp = HttpContext.Current.Session["LoggedUserType"].ToString();
+    var LoggedUserStatus = HttpContext.Current.Session["LoggedUserStatus"].ToString();
+    var LoggedCompanyStatus = HttpContext.Current.Session["LoggedCompanyStatus"].ToString();
+
+    if ((LoggedUserTp == "CompanyAdmin" || LoggedUserTp == "UserAdmin" || LoggedUserTp == "User") && LoggedUserStatus == "A" && LoggedCompanyStatus == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+
+    CnfDbContext db = new CnfDbContext();
+    Int64 compid = Convert.ToInt64(System.Web.HttpContext.Current.Session["loggedCompID"]);
+
+
+    List<SelectListItem> listRegID = new List<SelectListItem>();
+    listRegID.Add(new SelectListItem { Text = "CHITTAGONG", Value = "CHITTAGONG" });
+    listRegID.Add(new SelectListItem { Text = "COMILLA", Value = "COMILLA" });
+    listRegID.Add(new SelectListItem { Text = "BENAPOLE", Value = "BENAPOLE" });
+    listRegID.Add(new SelectListItem { Text = "DEPZ", Value = "DEPZ" });
+    listRegID.Add(new SelectListItem { Text = "ICD", Value = "ICD" });
+    listRegID.Add(new SelectListItem { Text = "AEPZ", Value = "AEPZ" });
+    listRegID.Add(new SelectListItem { Text = "AIRPORT", Value = "AIRPORT" });
+
+    List<SelectListItem> listJobType = new List<SelectListItem>();
+    listJobType.Add(new SelectListItem { Text = "IMPORT", Value = "IMPORT" });
+    listJobType.Add(new SelectListItem { Text = "EXPORT", Value = "EXPORT" });
+
+    List<SelectListItem> listStatus = new List<SelectListItem>();
+    listStatus.Add(new SelectListItem { Text = "Active", Value = "A" });
+    listStatus.Add(new SelectListItem { Text = "Inactive", Value = "I" });
+
+    //Party Name: [ ] ,Party Nam Field loaded in DropdownList
+    List<SelectListItem> listAccountName = new List<SelectListItem>();
+    var result = (from n in db.GlAcchartDbSet
+                  where n.COMPID == compid
+                  select n).ToList();
+
+    foreach (var n in result)
+    {
+        // GL_ACCHART aGlAcchart = db.GlAcchartDbSet.FirstOrDefault(e => e.ACCOUNTCD == n.ACCOUNTCD);
+        listAccountName.Add(new SelectListItem { Text = n.ACCOUNTNM, Value = n.ACCOUNTCD.ToString() });
+    }
+
+    List<SelectListItem> exchangetype = new List<SelectListItem>();
+    exchangetype.Add(new SelectListItem { Text = "BDT", Value = "BDT" });
+    exchangetype.Add(new SelectListItem { Text = "USD", Value = "USD" });
+    exchangetype.Add(new SelectListItem { Text = "EURO", Value = "EURO" });
+
+    exchangetype.Add(new SelectListItem { Text = "JPY", Value = "JPY" });
+    exchangetype.Add(new SelectListItem { Text = "GBP", Value = "GBP" });
+    exchangetype.Add(new SelectListItem { Text = "CHF", Value = "CHF" });
+    
+    
+
+
+    TimeZoneInfo timeZoneInfo;
+    timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Central Asia Standard Time");
+    DateTime currentDateTime = TimeZoneInfo.ConvertTime(DateTime.Now, timeZoneInfo);
+
+
+}
+
+<link href="~/Content/bootstrap_datepicker_css/datepicker.css" rel="stylesheet" />
+<link href="~/Content/bootstrap_datepicker_css/datepicker3.css" rel="stylesheet" />
+
+<script src="~/Scripts/bootstrap-datepicker.js"></script>
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    @Html.ValidationSummary(true)
+
+    @Html.HiddenFor(model => model.Cnf_JobID, new { id = "HiddentxtCnf_JobID" })
+    @Html.HiddenFor(model => model.COMPID, new { @Value = compid })
+
+
+
+    <div id="contentHeaderBox" style="height:auto">
+        @*<h1>Job Update (1st Part)</h1>*@
+        @if ((LoggedUserTp == "CompanyAdmin" || LoggedUserTp == "UserAdmin" || LoggedUserTp == "User") && LoggedUserStatus == "A")
+        {
+            var createStatus = "";
+            var updateStatus = "";
+            var deleteStatus = "";
+            var status = "";
+            var loggedUserID = HttpContext.Current.Session["loggedUserID"].ToString();
+            System.Data.SqlClient.SqlConnection conn = new System.Data.SqlClient.SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["CnfDbContext"].ToString());
+
+            string query1 = string.Format("SELECT STATUS, INSERTR, UPDATER, DELETER FROM ASL_ROLE WHERE  CONTROLLERNAME='JobInformation' AND COMPID='{0}' AND USERID = '{1}'", compid, loggedUserID);
+
+            System.Data.SqlClient.SqlCommand cmd1 = new System.Data.SqlClient.SqlCommand(query1, conn);
+            conn.Open();
+
+            SqlDataAdapter da1 = new SqlDataAdapter(cmd1);
+            DataTable ds1 = new DataTable();
+            da1.Fill(ds1);
+
+            foreach (DataRow row in ds1.Rows)
+            {
+                status = row["STATUS"].ToString();
+                createStatus = row["INSERTR"].ToString();
+                updateStatus = row["UPDATER"].ToString();
+                deleteStatus = row["DELETER"].ToString();
+            }
+            conn.Close();
+
+            if (updateStatus == 'A'.ToString())
+            {
+                <ul class="nav nav-tabs" role="tablist">
+                    <li class="active">@Html.ActionLink("1st Part", "FirstPartUpdate", "GraphView", new { style = "color: black;background-color: gainsboro;" })</li>
+                    <li>@Html.ActionLink("2nd Part", "SecondPartUpdate", "JobInformation", new { style = "color: black" })</li>
+                    <li style="padding-left:100px"><input type="submit" class="btn btn-primary btn-block" value="Print" name="command" formtarget="_blank" /></li>
+                </ul>
+            }
+
+            <div class="btn-group pull-right" id="editOption">
+                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" aria-expanded="false">
+                    <i class="fa fa-cog"></i>
+                </button>
+                <ul class="dropdown-menu pull-right" style="" role="menu">
+                    @if (createStatus == 'A'.ToString() && updateStatus == 'A'.ToString() && deleteStatus == 'A'.ToString())
+                    {
+                        <li>
+                            <a href="@Url.Action("Create", "JobInformation")"><i class="fa fa-plus"></i> Create</a>
+                        </li>
+                        <li>
+                            <a href="@Url.Action("FirstPartUpdate", "JobInformation")"><i class="fa fa-edit"></i> Update</a>
+                        </li>
+                        <li>
+                            <a href="@Url.Action("Delete", "JobInformation")"><i class="fa fa-times"></i> Delete</a>
+                        </li>
+                         @*<li>
+                             <a href="@Url.Action("Print", "JobInformation")" id="print"><i class="fa fa-print"></i> Print</a>
+                        </li>*@
+                    }
+                    else if (updateStatus == 'A'.ToString() && deleteStatus == 'A'.ToString())
+                    {
+                        <li>
+                            <a href="@Url.Action("FirstPartUpdate", "JobInformation")"><i class="fa fa-edit"></i> Update</a>
+                        </li>
+                        <li>
+                            <a href="@Url.Action("Delete", "JobInformation")"><i class="fa fa-times"></i> Delete</a>
+                        </li>
+                        @*<li>
+                            <a href="@Url.Action("Print", "JobInformation")" id="print"><i class="fa fa-print"></i> Print</a>
+                        </li>*@
+                    }
+                    else if (createStatus == 'A'.ToString() && updateStatus == 'A'.ToString())
+                    {
+                        <li>
+                            <a href="@Url.Action("Create", "JobInformation")"><i class="fa fa-plus"></i> Create</a>
+                        </li>
+                        <li>
+                            <a href="@Url.Action("FirstPartUpdate", "JobInformation")"><i class="fa fa-edit"></i> Update</a>
+                        </li>
+                        @*<li>
+                            <a href="@Url.Action("Print", "JobInformation")" id="print"><i class="fa fa-print"></i> Print</a>
+                        </li>*@
+                    }
+                    else if (createStatus == 'A'.ToString() && deleteStatus == 'A'.ToString())
+                    {
+                        <li>
+                            <a href="@Url.Action("Create", "JobInformation")"><i class="fa fa-plus"></i> Create</a>
+                        </li>
+                        <li>
+                            <a href="@Url.Action("Delete", "JobInformation")"><i class="fa fa-times"></i> Delete</a>
+                        </li>
+                        @*<li>
+                            <a href="@Url.Action("Print", "JobInformation")" id="print"><i class="fa fa-print"></i> Print</a>
+                        </li>*@
+                    }
+                    else if (createStatus == 'A'.ToString())
+                    {
+                        <li>
+                            <a href="@Url.Action("Create", "JobInformation")"><i class="fa fa-plus"></i> Create</a>
+                        </li>
+                        @*<li>
+                            <a href="@Url.Action("Print", "JobInformation")" id="print"><i class="fa fa-print"></i> Print</a>
+                        </li>*@
+                    }
+                    else if (updateStatus == 'A'.ToString())
+                    {
+                        <li>
+                            <a href="@Url.Action("FirstPartUpdate", "JobInformation")"><i class="fa fa-edit"></i> Update</a>
+                        </li>
+                        @*<li>
+                            <a href="@Url.Action("Print", "JobInformation")" id="print"><i class="fa fa-print"></i> Print</a>
+                        </li>*@
+                    }
+                    else if (deleteStatus == 'A'.ToString())
+                    {
+                        <li>
+                            <a href="@Url.Action("Delete", "JobInformation")"><i class="fa fa-times"></i> Delete</a>
+                        </li>
+                        @*<li>
+                            <a href="@Url.Action("Print", "JobInformation")" id="print"><i class="fa fa-print"></i> Print</a>
+                        </li>*@
+                    }
+                </ul>
+            </div>
+
+        }
+
+    </div>
+    <br/>
+
+    <div class="col-md-12">
+        <div class="panel panel-success">
+            <div class="panel-heading">Job Update (1st Part)</div>
+        </div>
+       
+        <div class="form-group">
+            <div class="row">
+                <div class="col-md-2">
+                    @Html.LabelFor(model => model.JOBYY, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.JOBYY, htmlAttributes: new { id = "txtjobYear", @class = "form-control input-sm",autofocus="true"})
+                </div>
+               
+                <div class="col-md-3">
+                    @Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.DropDownListFor(model => model.JOBTP, listJobType, "-Select-", htmlAttributes: new { id = "ddltxtJobType", @class = "form-control input-sm" })
+                    @Html.ValidationMessageFor(model => model.JOBTP, "", new { @class = "text-danger" })
+                </div>
+                <input type="submit" class="btn btn-info" value="getJobNO" id="btnSearch_JobType" name="command" style="display: none" />
+               
+               
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @Html.LabelFor(model => model.JOBNO, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.DropDownListFor(model => model.JOBNO, Enumerable.Empty<SelectListItem>(), "empty", new { id = "txtJOBNO", @class = "form-control input-sm" })
+                </div>
+                <div class="col-md-3">
+                    @Html.LabelFor(model => model.JOBCDT, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.JOBCDT, htmlAttributes: new { id = "idJOBCDT", @class = "form-control input-sm", @readonly = "readonly" })
+                    @Html.ValidationMessageFor(model => model.JOBCDT, "", new { @class = "text-danger" })
+                </div>
+            </div>
+            <br />
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @Html.LabelFor(model => model.REGID, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.DropDownListFor(model => model.REGID, listRegID, "-Select-", htmlAttributes: new { id = "ddltxtRedID", @class = "form-control input-sm" })
+                    @Html.ValidationMessageFor(model => model.REGID, "", new { @class = "text-danger" })
+                </div>
+               
+                <div class="col-md-3">
+                    @Html.Label("Name", "Party Name", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.DropDownListFor(model => model.PARTYID, listAccountName, "-Select-", htmlAttributes: new { id = "ddltxtPARTYID", @class = "form-control input-sm" })
+                    @Html.ValidationMessageFor(model => model.PARTYID, "", new { @class = "text-danger" })
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @Html.LabelFor(model => model.CONSIGNEENM, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.CONSIGNEENM, htmlAttributes: new { id = "txtCONSIGNEENM", @class = "form-control input-sm" })
+                </div>
+              
+                <div class="col-md-3">
+                    @Html.LabelFor(model => model.CONSIGNEEADD, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.CONSIGNEEADD, htmlAttributes: new { id = "txtCONSIGNEEADD", @class = "form-control input-sm" })
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @Html.LabelFor(model => model.SUPPLIERNM, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.SUPPLIERNM, htmlAttributes: new { id = "txtSUPPLIERNM", @class = "form-control input-sm" })
+                </div>
+               
+                <div class="col-md-3">
+                    @Html.LabelFor(model => model.PKGS, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.PKGS, htmlAttributes: new { id = "txtPKGS", @class = "form-control input-sm" })
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @Html.LabelFor(model => model.GOODS, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.GOODS, htmlAttributes: new { id = "txtGOODS", @class = "form-control input-sm" })
+                </div>
+               
+                <div class="col-md-3">
+                    @Html.LabelFor(model => model.WTGROSS, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.WTGROSS, htmlAttributes: new { id = "txtWTGROSS", @class = "form-control input-sm" })
+                    @Html.ValidationMessageFor(model => model.WTGROSS, "", new { @class = "text-danger" })
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @Html.LabelFor(model => model.WTNET, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.WTNET, htmlAttributes: new { id = "txtWTNET", @class = "form-control input-sm" })
+                    @Html.ValidationMessageFor(model => model.WTNET, "", new { @class = "text-danger" })
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @Html.LabelFor(model => model.CNFV_USD, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.CNFV_USD, htmlAttributes: new { id = "txtCNFV_USD", @class = "form-control input-sm" })
+                    @Html.ValidationMessageFor(model => model.CNFV_USD, "", new { @class = "text-danger" })
+                </div>
+                <div class="col-md-3">
+                    @Html.LabelFor(model => model.CNFV_ETP, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.DropDownListFor(model => model.CNFV_ETP, exchangetype, "--select--", htmlAttributes: new { id = "txtCNFV_ETP", @class = "form-control input-sm" })
+                </div>
+               
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @Html.LabelFor(model => model.CNFV_ERT, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.CNFV_ERT, htmlAttributes: new { id = "txtCNFV_ERT", @class = "form-control input-sm" })
+                    @Html.ValidationMessageFor(model => model.CNFV_ERT, "", new { @class = "text-danger" })
+                </div>
+                <div class="col-md-3">
+                    @Html.LabelFor(model => model.CNFV_BDT, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.CNFV_BDT, htmlAttributes: new { id = "txtCNFV_BDT", @class = "form-control input-sm" })
+                    @Html.ValidationMessageFor(model => model.CNFV_BDT, "", new { @class = "text-danger" })
+                </div>
+               
+               
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @Html.LabelFor(model => model.CRFV_USD, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.CRFV_USD, htmlAttributes: new { id = "txtCRFV_USD", @class = "form-control input-sm" })
+                    @Html.ValidationMessageFor(model => model.CRFV_USD, "", new { @class = "text-danger" })
+                </div>
+                <div class="col-md-3">
+                    @Html.LabelFor(model => model.ASSV_BDT, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.ASSV_BDT, htmlAttributes: new { id = "txtASSV_BDT", @class = "form-control input-sm" })
+                    @Html.ValidationMessageFor(model => model.ASSV_BDT, "", new { @class = "text-danger" })
+                </div>
+               
+               
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @Html.LabelFor(model => model.COMMAMT, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.COMMAMT, htmlAttributes: new { id = "txtCOMMAMT", @class = "form-control input-sm" })
+                    @Html.ValidationMessageFor(model => model.COMMAMT, "", new { @class = "text-danger" })
+                </div>
+                <div class="col-md-3">
+                    @Html.LabelFor(model => model.CONTNO, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.CONTNO, htmlAttributes: new { id = "txtCONTNO", @class = "form-control input-sm" })
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @Html.LabelFor(model => model.DOCINVNO, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.DOCINVNO, htmlAttributes: new { id = "txtDOCINVNO", @class = "form-control input-sm" })
+                </div>
+               
+                <div class="col-md-3">
+                    @*@Html.LabelFor(model => model.DOCINVDT, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("Invoice Date", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.DOCINVDT, htmlAttributes: new { id = "idDOCINVDT", @class = "form-control input-sm" })
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @Html.LabelFor(model => model.PERMITNO, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.PERMITNO, htmlAttributes: new { id = "txtPERMITNO", @class = "form-control input-sm" })
+                </div>
+              
+                <div class="col-md-3">
+                    @Html.LabelFor(model => model.PERMITDT, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.PERMITDT, htmlAttributes: new { id = "idPERMITDT", @class = "form-control input-sm" })
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @Html.LabelFor(model => model.BILLNOM, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.BILLNOM, htmlAttributes: new { id = "txtBILLNOM", @class = "form-control input-sm" })
+                </div>
+                <div class="col-md-3">
+                    @*@Html.LabelFor(model => model.CONTNO, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("Flight No", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.FLIGHTNO, htmlAttributes: new { @class = "form-control input-sm", id = "FLIGHTNO" })
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @*@Html.LabelFor(model => model.BILLDTM, htmlAttributes: new { @class = "control-label" })*@
+                </div>
+                <div class="col-md-3">
+                    @*@Html.TextBoxFor(model => model.BILLDTM, htmlAttributes: new { id = "idBILLDTM", @class = "form-control input-sm" })*@
+                </div>
+              
+                <div class="col-md-3">
+                    @Html.LabelFor(model => model.BILLFDT, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.BILLFDT, htmlAttributes: new { id = "idBILLFDT", @class = "form-control input-sm" })
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @Html.Label("BL No", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.BLNO, htmlAttributes: new { id = "txtBLNO", @class = "form-control input-sm" })
+                </div>
+
+                <div class="col-md-3">
+                    @Html.Label("BL Date", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.BLDT, htmlAttributes: new { id = "idBLDT", @class = "form-control input-sm" })
+                </div>
+            </div>
+            
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @Html.LabelFor(model => model.BENO, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.BENO, htmlAttributes: new { id = "txtBENO", @class = "form-control input-sm" })
+                </div>
+              
+                <div class="col-md-3">
+                    @Html.LabelFor(model => model.BEDT, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.BEDT, htmlAttributes: new { id = "idBEDT", @class = "form-control input-sm" })
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @Html.LabelFor(model => model.LCNO, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.LCNO, htmlAttributes: new { id = "txtLCNO", @class = "form-control input-sm" })
+                </div>
+                
+                <div class="col-md-3">
+                    @Html.LabelFor(model => model.LCDT, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.LCDT, htmlAttributes: new { id = "idLCDT", @class = "form-control input-sm" })
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @Html.LabelFor(model => model.STATUS, htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.DropDownListFor(model => model.STATUS, listStatus, htmlAttributes: new { id = "txtSTATUS", @class = "form-control input-sm" })
+                    @Html.ValidationMessageFor(model => model.STATUS, "", new { @class = "text-danger" })
+                </div>
+                <div class="col-md-3">
+                    @Html.Label("CBM", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.TextBoxFor(model => model.CBM, htmlAttributes: new { id = "idCBM", @class = "form-control input-sm" })
+                </div>
+                
+
+            </div>
+           
+         
+           
+                    @Html.HiddenFor(model => model.CRFNO, htmlAttributes: new { id = "txtCRFNO", @class = "form-control input-sm" })
+               
+             
+                    @Html.HiddenFor(model => model.CRFDT, htmlAttributes: new { id = "idCRFDT", @class = "form-control input-sm" })
+     
+                 
+               
+                    @*@Html.HiddenFor(model => model.BLNO, htmlAttributes: new { id = "txtBLNO", @class = "form-control input-sm" })
+         
+              
+                    @Html.HiddenFor(model => model.BLDT, htmlAttributes: new { id = "idBLDT", @class = "form-control input-sm" })*@
+       
+                    @Html.HiddenFor(model => model.BTNO, htmlAttributes: new { id = "txtBTNO", @class = "form-control input-sm" })
+              
+
+               
+                    @Html.HiddenFor(model => model.BTDT, htmlAttributes: new { id = "idBTDT", @class = "form-control input-sm" })
+               
+           
+                    @Html.HiddenFor(model => model.LCANO, htmlAttributes: new { id = "txtLCANO", @class = "form-control input-sm" })
+             
+
+               
+                    @Html.HiddenFor(model => model.LCADT, htmlAttributes: new { id = "idLCADT", @class = "form-control input-sm" })
+           
+                    @Html.HiddenFor(model => model.AWBNO, htmlAttributes: new { id = "txtAWBNO", @class = "form-control input-sm" })
+             
+
+            
+                    @Html.HiddenFor(model => model.AWBDT, htmlAttributes: new { id = "idAWBDT", @class = "form-control input-sm" })
+              
+           
+                    @Html.HiddenFor(model => model.HAWBNO, htmlAttributes: new { id = "txtHAWBNO", @class = "form-control input-sm" })
+         
+
+            
+                    @Html.HiddenFor(model => model.HAWBDT, htmlAttributes: new { id = "idHAWBDT", @class = "form-control input-sm" })
+            
+                    @Html.HiddenFor(model => model.UNDTNO, htmlAttributes: new { id = "txtUNDTNO", @class = "form-control input-sm" })
+              
+                    @Html.HiddenFor(model => model.UNDTDT, htmlAttributes: new { id = "idUNDTDT", @class = "form-control input-sm" })
+           
+                    @Html.HiddenFor(model => model.MVESSEL, htmlAttributes: new { id = "txtMVESSEL", @class = "form-control input-sm" })
+              
+
+              
+                    @Html.HiddenFor(model => model.FVESSEL, htmlAttributes: new { id = "txtFVESSEL", @class = "form-control input-sm" })
+                
+               
+                    @Html.HiddenFor(model => model.MARKSNO, htmlAttributes: new { id = "txtMARKSNO", @class = "form-control input-sm" })
+            
+
+               
+                    @Html.HiddenFor(model => model.ETB, htmlAttributes: new { id = "idETB", @class = "form-control input-sm" })
+            
+                    @Html.HiddenFor(model => model.BERTHSNO, htmlAttributes: new { id = "txtBERTHSNO", @class = "form-control input-sm" })
+               
+
+               
+              
+                    @Html.HiddenFor(model => model.ARRIVEDT, htmlAttributes: new { id = "idARRIVEDT", @class = "form-control input-sm" })
+        
+          
+                    @Html.HiddenFor(model => model.ROTNO, htmlAttributes: new { id = "txtROTNO", @class = "form-control input-sm" })
+              
+
+              
+                    @Html.HiddenFor(model => model.LINENO, htmlAttributes: new { id = "txtLINENO", @class = "form-control input-sm" })
+            
+                    @Html.HiddenFor(model => model.DELIVERYDT, htmlAttributes: new { id = "idDELIVERYDT", @class = "form-control input-sm" })
+                
+
+             
+                    @Html.HiddenFor(model => model.CLDT, htmlAttributes: new { id = "idCLDT", @class = "form-control input-sm" })
+           
+     
+          
+                    @Html.HiddenFor(model => model.WFDT, htmlAttributes: new { id = "idWFDT", @class = "form-control input-sm" })
+            @Html.HiddenFor(model => model.EXPNO, htmlAttributes: new { id = "EXPNO", @class = "form-control input-sm" })
+            @Html.HiddenFor(model => model.EXPDT, htmlAttributes: new { id = "EXPDT", @class = "form-control input-sm" })
+            @Html.HiddenFor(model => model.PARTSHIPMENT, htmlAttributes: new { id = "PARTSHIPMENT", @class = "form-control input-sm" })
+           
+            @Html.HiddenFor(model => model.PCNO, htmlAttributes: new { id = "PCNO", @class = "form-control input-sm" })
+            @Html.HiddenFor(model => model.PCDT, htmlAttributes: new { id = "PCDT", @class = "form-control input-sm" })
+            @Html.HiddenFor(model => model.SPAGNM, htmlAttributes: new { id = "SPAGNM", @class = "form-control input-sm" })
+            @Html.HiddenFor(model => model.FWAGNM, htmlAttributes: new { id = "FWAGNM", @class = "form-control input-sm" })
+
+            @Html.HiddenFor(model => model.DESTN, htmlAttributes: new { id = "DESTN", @class = "form-control input-sm" })
+            @Html.HiddenFor(model => model.PTEMP, htmlAttributes: new { id = "PTEMP", @class = "form-control input-sm" })
+            @Html.HiddenFor(model => model.VATRNO, htmlAttributes: new { id = "VATRNO", @class = "form-control input-sm" })
+            @Html.HiddenFor(model => model.CSEALNO, htmlAttributes: new { id = "CSEALNO", @class = "form-control input-sm" })
+            @Html.HiddenFor(model => model.REMARKS, htmlAttributes: new { id = "REMARKS", @class = "form-control input-sm" })
+            
+
+            @Html.HiddenFor(model => model.INSTIME, new { id = "HiddentxtInstime" })
+            @Html.HiddenFor(model => model.INSIPNO, new { id = "HiddentxtInsipno" })
+            @Html.HiddenFor(model => model.INSLTUDE, new { id = "HiddentxtInsltude" })
+            @Html.HiddenFor(model => model.INSUSERID, new { id = "HiddentxtInsuserId" })
+
+            @Html.TextBoxFor(model => model.UPDLTUDE, new { id = "latlon", style = "display: none;" })
+            <input id="lat" type="hidden" />
+            <input id="lon" type="hidden" />
+
+            <br />
+            <div class="row">
+                <div class="col-md-4"></div>
+                <div class="col-md-4">
+                    <input type="submit" class="btn btn-primary btn-block" value="Update" name="command" id="Updatefirst" />
+                </div>
+                <div class="col-md-4"></div>
+            </div>
+        </div>
+    </div>
+ 
+
+    <script src="http://maps.google.com/maps/api/js?sensor=false"></script>
+
+    <script language="javascript" type="text/javascript">
+        $(function () {
+            navigator.geolocation.getCurrentPosition(showPosition);
+
+            function showPosition(position) {
+                var coordinates = position.coords;
+                $("#lat").val(coordinates.latitude);
+                $("#lon").val(coordinates.longitude);
+
+                $("#latlon").val(
+                    $("#lat").val() + "," + $("#lon").val()
+                );
+            }
+            //function positionError(position) {
+            //    alert("!!! Error: "+position.code);
+            //}
+        });
+    </script>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+
+            $("#Updatefirst").click(function () {
+
+                $("#ddltxtPARTYID").attr("disabled", false);
+
+
+            });
+            
+        $("#txtjobYear").datepicker({
+            format: "yyyy", // Notice the Extra space at the beginning
+            viewMode: "years",
+            minViewMode: "years",
+            autoclose:true
+        });
+
+        $('#idDOCINVDT').datepicker({
+            format: "dd-M-yyyy",
+            forceParse: false,
+            autoclose: true,
+            todayHighlight: true,
+            showOnFocus: true
+        }).on('show', function (e) {
+            if (e.date) {
+                $(this).data('stickyDate', e.date);
+            }
+            else {
+                $(this).data('stickyDate', null);
+            }
+        });
+        $('#idPERMITDT').datepicker({
+            format: "dd-M-yyyy",
+            forceParse: false,
+            autoclose: true,
+            todayHighlight: true,
+            showOnFocus: true
+        }).on('show', function (e) {
+            if (e.date) {
+                $(this).data('stickyDate', e.date);
+            }
+            else {
+                $(this).data('stickyDate', null);
+            }
+        });
+
+        //$('#idBILLDTM').datepicker({
+        //    format: "dd-M-yyyy",
+        //    autoclose: true,
+        //    todayHighlight: true,
+        //    showOnFocus: true
+        //}).on('show', function (e) {
+        //    if (e.date) {
+        //        $(this).data('stickyDate', e.date);
+        //    }
+        //    else {
+        //        $(this).data('stickyDate', null);
+        //    }
+        //}).on('hide', function (e) {
+        //    var stickyDate = $(this).data('stickyDate');
+
+        //    if (!e.date && stickyDate) {
+        //        $(this).datepicker('setDate', stickyDate);
+        //        $(this).data('stickyDate', null);
+        //    }
+        //    document.getElementById("").focus();
+        //});
+
+        $('#idBILLFDT').datepicker({
+            format: "dd-M-yyyy",
+            forceParse: false,
+            autoclose: true,
+            todayHighlight: true,
+            showOnFocus: true
+        }).on('show', function (e) {
+            if (e.date) {
+                $(this).data('stickyDate', e.date);
+            }
+            else {
+                $(this).data('stickyDate', null);
+            }
+        });
+
+        $('#idBEDT').datepicker({
+            format: "dd-M-yyyy",
+            forceParse: false,
+            autoclose: true,
+            todayHighlight: true,
+            showOnFocus: true
+        }).on('show', function (e) {
+            if (e.date) {
+                $(this).data('stickyDate', e.date);
+            }
+            else {
+                $(this).data('stickyDate', null);
+            }
+        });
+        $('#idLCDT').datepicker({
+            format: "dd-M-yyyy",
+            forceParse: false,
+            autoclose: true,
+            todayHighlight: true,
+            showOnFocus: true
+        }).on('show', function (e) {
+            if (e.date) {
+                $(this).data('stickyDate', e.date);
+            }
+            else {
+                $(this).data('stickyDate', null);
+            }
+        });
+        $('#idBLDT').datepicker({
+            format: "dd-M-yyyy",
+            forceParse: false,
+            autoclose: true,
+            todayHighlight: true,
+            showOnFocus: true
+        }).on('show', function (e) {
+            if (e.date) {
+                $(this).data('stickyDate', e.date);
+            }
+            else {
+                $(this).data('stickyDate', null);
+            }
+        });
+       
+        $('#txtjobYear').change(function () {
+            var txtjobYear = $('#txtjobYear').val();
+            var dropDownJobType = $('#ddltxtJobType').val();
+
+            //...................
+            $.getJSON('/JobInformation/JobTypeChanged', { "DropDownJobType": dropDownJobType, "TxtjobYear": txtjobYear },
+                function (result) {
+                    var ddl = $('#txtJOBNO');
+                    ddl.empty();
+                    $("#txtJOBNO").append('<option value="'
+                        + "select" + '">'
+                        + "select" + '</option>');
+                    $(result).each(function () {
+                        $(document.createElement('option'))
+                            .attr('value', this.Value)
+                            .text(this.Text)
+                            .appendTo(ddl);
+                    });
+                });
+
+            $('#txtJOBNO').val("");
+
+            $('#idJOBCDT').val("");
+            $('#ddltxtRedID').val("");
+            $('#ddltxtPARTYID').val("");
+            $('#txtCONSIGNEENM').val("");
+            $('#txtCONSIGNEEADD').val("");
+            $('#txtSUPPLIERNM').val("");
+            $('#txtPKGS').val("");
+            $('#txtGOODS').val("");
+            $('#txtWTGROSS').val("");
+            $('#txtWTNET').val("");
+            $('#txtCNFV_USD').val("");
+            $('#txtCNFV_ETP').val("");
+            $('#txtCNFV_ERT').val("");
+            $('#txtCNFV_BDT').val("");
+            $('#txtCRFV_USD').val("");
+            $('#txtASSV_BDT').val("");
+            $('#txtCOMMAMT').val("");
+            $('#txtCONTNO').val("");
+            $('#txtDOCINVNO').val("");
+            $('#idDOCINVDT').val("");
+            $('#txtPERMITNO').val("");
+            $('#idPERMITDT').val("");
+            $('#txtBILLNOM').val("");
+            $('#FLIGHTNO').val("");
+            
+            $('#idBILLDTM').val("");
+            $('#idBILLFDT').val("");
+            $('#txtBENO').val("");
+            $('#idBEDT').val("");
+            $('#txtLCNO').val("");
+            $('#idLCDT').val("");
+            $('#txtSTATUS').val("");
+            
+            $('#idCBM').val("");
+
+            //......................
+        });
+            
+        $('#ddltxtJobType').change(function () {
+            var txtjobYear = $('#txtjobYear').val();
+            var dropDownJobType = $('#ddltxtJobType option:selected').val();
+
+            //...................
+            $.getJSON('/JobInformation/JobTypeChanged', { "DropDownJobType": dropDownJobType, "TxtjobYear": txtjobYear },
+                function (result) {
+                    var ddl = $('#txtJOBNO');
+                    ddl.empty();
+                    $("#txtJOBNO").append('<option value="'
+                           + "select" + '">'
+                           + "select" + '</option>');
+                    $(result).each(function () {
+                        $(document.createElement('option'))
+                            .attr('value', this.Value)
+                            .text(this.Text)
+                            .appendTo(ddl);
+                    });
+                });
+
+            //......................
+        });
+
+        //$('#print').click(function () {
+
+        //    var id = $('#HiddentxtCnf_JobID').val();
+        //    var jobno = $('#txtJOBNO').val();
+        //    var jobtype = $('#ddltxtJobType').val();
+        //    var jobyear = $('#txtjobYear').val();
+
+
+        //    $.getJSON(
+        //   "/JobInformation/GetJobInfo", { "ID": id, "JOBNO": jobno, "JOBTYPE": jobtype, "JOBYEAR": jobyear },
+        //   function(myData){}
+        //   );
+        //});
+
+        $('#txtJOBNO').change(function () {
+            //When the party name (Dropdown list) changed then get the "Party ID" from "CNF_PARTY" table
+            var changedDropDown = $('#txtJOBNO option:selected').val();
+            var ddltxtJobType = $('#ddltxtJobType').val();
+            var txtjobYear = $('#txtjobYear').val();
+
+
+            var HiddentxtCnf_JobID = document.getElementById('HiddentxtCnf_JobID');
+            //var HiddentxtCompanyID = document.getElementById('HiddentxtCompanyID');
+            var idJOBCDT = document.getElementById('idJOBCDT');
+            var ddltxtRedID = document.getElementById('ddltxtRedID');
+            var ddltxtPARTYID = document.getElementById('ddltxtPARTYID');
+            var txtCONSIGNEENM = document.getElementById('txtCONSIGNEENM');
+            var txtCONSIGNEEADD = document.getElementById('txtCONSIGNEEADD');
+            var txtSUPPLIERNM = document.getElementById('txtSUPPLIERNM');
+            var txtPKGS = document.getElementById('txtPKGS');
+            var txtGOODS = document.getElementById('txtGOODS');
+            var txtWTGROSS = document.getElementById('txtWTGROSS');
+            var txtWTNET = document.getElementById('txtWTNET');
+            var txtCNFV_USD = document.getElementById('txtCNFV_USD');
+            var txtCNFV_ETP = document.getElementById('txtCNFV_ETP');
+            var txtCNFV_ERT = document.getElementById('txtCNFV_ERT');
+            var txtCNFV_BDT = document.getElementById('txtCNFV_BDT');
+            var txtCRFV_USD = document.getElementById('txtCRFV_USD');
+            var txtASSV_BDT = document.getElementById('txtASSV_BDT');
+            var txtCOMMAMT = document.getElementById('txtCOMMAMT');
+            var txtCONTNO = document.getElementById('txtCONTNO');
+            var txtDOCINVNO = document.getElementById('txtDOCINVNO');
+            var idDOCINVDT = document.getElementById('idDOCINVDT');
+            var txtPERMITNO = document.getElementById('txtPERMITNO');
+            var idPERMITDT = document.getElementById('idPERMITDT');
+            var txtBILLNOM = document.getElementById('txtBILLNOM');
+            var txtFlightNo = document.getElementById('FLIGHTNO');
+          
+            var idBILLDTM = document.getElementById('idBILLDTM');
+            var idBILLFDT = document.getElementById('idBILLFDT');
+            var txtBENO = document.getElementById('txtBENO');
+            var idBEDT = document.getElementById('idBEDT');
+            var txtLCNO = document.getElementById('txtLCNO');
+            var idLCDT = document.getElementById('idLCDT');
+            var txtSTATUS = document.getElementById('txtSTATUS');
+            var txtCBM = document.getElementById('idCBM');
+
+
+            var txtCRFNO = document.getElementById('txtCRFNO');
+            var idCRFDT = document.getElementById('idCRFDT');
+            var txtBLNO = document.getElementById('txtBLNO');
+            var idBLDT = document.getElementById('idBLDT');
+            var txtBTNO = document.getElementById('txtBTNO');
+            var idBTDT = document.getElementById('idBTDT');
+            var txtLCANO = document.getElementById('txtLCANO');
+            var idLCADT = document.getElementById('idLCADT');
+            var txtAWBNO = document.getElementById('txtAWBNO');
+            var idAWBDT = document.getElementById('idAWBDT');
+            var txtHAWBNO = document.getElementById('txtHAWBNO');
+            var idHAWBDT = document.getElementById('idHAWBDT');
+            var txtUNDTNO = document.getElementById('txtUNDTNO');
+            var idUNDTDT = document.getElementById('idUNDTDT');
+            var txtMVESSEL = document.getElementById('txtMVESSEL');
+            var txtFVESSEL = document.getElementById('txtFVESSEL');
+            var txtMARKSNO = document.getElementById('txtMARKSNO');
+            var idETB = document.getElementById('idETB');
+            var txtBERTHSNO = document.getElementById('txtBERTHSNO');
+            var idARRIVEDT = document.getElementById('idARRIVEDT');
+            var txtROTNO = document.getElementById('txtROTNO');
+            var txtLINENO = document.getElementById('txtLINENO');
+            var idDELIVERYDT = document.getElementById('idDELIVERYDT');
+            var idCLDT = document.getElementById('idCLDT');
+            var idWFDT = document.getElementById('idWFDT');
+
+            var idEXPNO = document.getElementById('EXPNO'); 
+        
+            var idEXPDT = document.getElementById('EXPDT');
+            var idPARTSHIPMENT = document.getElementById('PARTSHIPMENT');
+
+            var idPCNO = document.getElementById('PCNO');
+            var txtPCDT = document.getElementById('PCDT');
+            var txtSPAGNM = document.getElementById('SPAGNM');
+            var idFWAGNM = document.getElementById('FWAGNM');
+            var idDESTN = document.getElementById('DESTN');
+            var idPTEMP = document.getElementById('PTEMP');
+
+            var idVATRNO = document.getElementById('VATRNO');
+
+            var idCSEALNO = document.getElementById('CSEALNO');
+            var idREMARKS = document.getElementById('REMARKS');
+            
+            var txtInseruserId = document.getElementById('HiddentxtInsuserId');
+            var txtInsertime = document.getElementById('HiddentxtInstime');
+            var txtinslutude = document.getElementById('HiddentxtInsltude');
+            var txtinseripno = document.getElementById('HiddentxtInsipno');
+
+            $.getJSON(
+               "/JobInformation/GetAllData", { "ChangedDropDown": changedDropDown, "DdltxtJobType": ddltxtJobType, "TxtjobYear": txtjobYear },
+               function (myData) {
+
+                   HiddentxtCnf_JobID.value = myData.Cnf_JobID;
+                   //HiddentxtCompanyID.value = myData.COMPID;
+                   idJOBCDT.value = myData.JOBCDT;
+                   ddltxtRedID.value = myData.REGID;
+                   ddltxtPARTYID.value = myData.party;
+                   txtCONSIGNEENM.value = myData.CONSIGNEENM;
+                   txtCONSIGNEEADD.value = myData.CONSIGNEEADD;
+                   txtSUPPLIERNM.value = myData.SUPPLIERNM;
+                   txtPKGS.value = myData.PKGS;
+                   txtGOODS.value = myData.GOODS;
+                   txtWTGROSS.value = myData.WTGROSS;
+                   txtWTNET.value = myData.WTNET;
+                   txtCNFV_USD.value = myData.CNFV_USD;
+                   txtCNFV_ETP.value = myData.CNFV_ETP;
+                   txtCNFV_ERT.value = myData.CNFV_ERT;
+                   txtCNFV_BDT.value = myData.CNFV_BDT;
+                   txtCRFV_USD.value = myData.CRFV_USD;
+                   txtASSV_BDT.value = myData.ASSV_BDT;
+                   txtCOMMAMT.value = myData.COMMAMT;
+                   txtCONTNO.value = myData.CONTNO;
+                   txtDOCINVNO.value = myData.DOCINVNO;
+                   idDOCINVDT.value = myData.DOCINVDT;
+                   txtPERMITNO.value = myData.PERMITNO;
+                   idPERMITDT.value = myData.PERMITDT;
+                   txtBILLNOM.value = myData.BILLNOM;
+                   txtFlightNo.value = myData.FLIGHTNO;
+                   //idBILLDTM.value = myData.BILLDTM;
+                   idBILLFDT.value = myData.BILLFDT;
+                   txtBENO.value = myData.BENO;
+                   idBEDT.value = myData.BEDT;
+                   txtLCNO.value = myData.LCNO;
+                   idLCDT.value = myData.LCDT;
+                   txtSTATUS.value = myData.STATUS;
+                   txtCBM.value = myData.CBM;
+
+                   txtInseruserId.value = myData.INSUSERID;
+                   txtInsertime.value = myData.INSTIME;
+                   txtinslutude.value = myData.INSLTUDE;
+                   txtinseripno.value = myData.INSIPNO;
+
+
+                   txtCRFNO.value = myData.CRFNO;
+                   idCRFDT.value = myData.CRFDT;
+                   txtBLNO.value = myData.BLNO;
+                   idBLDT.value = myData.BLDT;
+                   txtBTNO.value = myData.BTNO;
+                   idBTDT.value = myData.BTDT;
+                   txtLCANO.value = myData.LCANO;
+                   idLCADT.value = myData.LCADT;
+                   txtAWBNO.value = myData.AWBNO;
+                   idAWBDT.value = myData.AWBDT;
+                   txtHAWBNO.value = myData.HAWBNO;
+                   idHAWBDT.value = myData.HAWBDT;
+                   txtUNDTNO.value = myData.UNDTNO;
+                   idUNDTDT.value = myData.UNDTDT;
+                   txtMVESSEL.value = myData.MVESSEL;
+                   txtFVESSEL.value = myData.FVESSEL;
+                   txtMARKSNO.value = myData.MARKSNO;
+                   idETB.value = myData.ETB;
+                   txtBERTHSNO.value = myData.BERTHSNO;
+                   idARRIVEDT.value = myData.ARRIVEDT;
+                   txtROTNO.value = myData.ROTNO;
+                   txtLINENO.value = myData.LINENO;
+                   idDELIVERYDT.value = myData.DELIVERYDT;
+                   idCLDT.value = myData.CLDT;
+                   idWFDT.value = myData.WFDT;
+
+                   idEXPNO.value = myData.EXPNO;
+                   idEXPDT.value = myData.EXPDT;
+                   idPARTSHIPMENT.value = myData.PARTSHIPMENT;
+
+                   idPCNO.value = myData.PCNO;
+                   txtPCDT.value = myData.PCDT;
+                   txtSPAGNM.value = myData.SPAGNM;
+                   idFWAGNM.value = myData.FWAGNM;
+                   idDESTN.value = myData.DESTN;
+                   idPTEMP.value = myData.PTEMP;
+
+                   idVATRNO.value = myData.VATRNO;
+
+                   idCSEALNO.value = myData.CSEALNO;
+                   idREMARKS.value = myData.REMARKS;
+
+
+                   if (myData.PARTYFIELD != "")
+                   {
+                       $("#ddltxtPARTYID").attr("disabled", "disabled");
+                   }
+                   document.getElementById("ddltxtRedID").focus();
+
+
+               });
+
+
+            $('#idJOBCDT').val("");
+            $('#ddltxtRedID').val("");
+            $('#ddltxtPARTYID').val("");
+            $('#txtCONSIGNEENM').val("");
+            $('#txtCONSIGNEEADD').val("");
+            $('#txtSUPPLIERNM').val("");
+            $('#txtPKGS').val("");
+            $('#txtGOODS').val("");
+            $('#txtWTGROSS').val("");
+            $('#txtWTNET').val("");
+            $('#txtCNFV_USD').val("");
+            $('#txtCNFV_ETP').val("");
+            $('#txtCNFV_ERT').val("");
+            $('#txtCNFV_BDT').val("");
+            $('#txtCRFV_USD').val("");
+            $('#txtASSV_BDT').val("");
+            $('#txtCOMMAMT').val("");
+            $('#txtCONTNO').val("");
+            $('#txtDOCINVNO').val("");
+            $('#idDOCINVDT').val("");
+            $('#txtPERMITNO').val("");
+            $('#idPERMITDT').val("");
+            $('#txtBILLNOM').val("");
+
+            $('#FLIGHTNO').val("");
+         
+            $('#idBILLDTM').val("");
+            $('#idBILLFDT').val("");
+            $('#txtBENO').val("");
+            $('#idBEDT').val("");
+            $('#txtLCNO').val("");
+            $('#idLCDT').val("");
+            $('#txtSTATUS').val("");
+            $('#idCBM').val("");
+
+
+        });
+        $('#txtCNFV_USD').keydown(function (e) {
+            if (e.which == 9) {
+                var exchangerate = $('#txtCNFV_ERT').val();
+                var valueUSD = $('#txtCNFV_USD').val();
+                var CnfBDT = document.getElementById('txtCNFV_BDT');
+                $("#txtCNFV_BDT").val(" ");
+                $.getJSON(
+                   "/JobInformation/CNFBDT", { "ExchangeRate": exchangerate, "ValueUSD": valueUSD },
+                   function (myData) {
+                       CnfBDT.value = myData.Valueusd;
+                       //document.getElementById("txtCNFV_BDT").focus();
+                   });
+            }
+          
+        });
+        $('#txtCNFV_ERT').keydown(function (e) {
+            if (e.which == 9) {
+                var exchangerate = $('#txtCNFV_ERT').val();
+                var valueUSD = $('#txtCNFV_USD').val();
+                var CnfBDT = document.getElementById('txtCNFV_BDT');
+                $("#txtCNFV_BDT").val(" ");
+                $.getJSON(
+                   "/JobInformation/CNFBDT", { "ExchangeRate": exchangerate, "ValueUSD": valueUSD },
+                   function (myData) {
+                       CnfBDT.value = myData.Valueusd;
+                       //document.getElementById("txtCNFV_BDT").focus();
+                   });
+            }
+           
+        });
+       
+        $('#txtASSV_BDT').keydown(function (e) {
+            if (e.which == 9) {
+                var AssvBDT = $('#txtASSV_BDT').val();
+                var partyid = $('#ddltxtPARTYID').val();
+                var exchangetp = $('#txtCNFV_ETP').val();
+                var commission = document.getElementById('txtCOMMAMT');
+                $("#txtCOMMAMT").val(" ");
+                $.getJSON(
+                  "/JobInformation/ForCommissionCalculation", { "CnfAssvBDT": AssvBDT, "CnfPartyId": partyid, "CnfExchangeTp": exchangetp },
+                  function (myData) {
+                      commission.value = myData.commit;
+                      document.getElementById("txtCONTNO").focus();
+                  });
+            }
+
+        });
+
+        });
+    </script>
+
+  
+}
+
+@*<script src="~/Scripts/jquery-1.9.1.min.js"></script>*@
+
+@*@section Scripts {
+        @Scripts.Render("~/bundles/jqueryval")
+    }*@
+
+
+
+@*<script src="~/Scripts/jquery.js"></script>*@
+<script src="~/Scripts/jquery.validate.js"></script>
+<script src="~/Scripts/jquery.validate.unobtrusive.js"></script>  

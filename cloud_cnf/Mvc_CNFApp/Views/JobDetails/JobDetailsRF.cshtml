@@ -1,0 +1,167 @@
+﻿@using System.Net.Mime
+@using System.Web.UI.WebControls
+@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.PageModel
+
+
+@{
+    ViewBag.Title = "BillForwardingIndex";
+    if (HttpContext.Current.Session["LoggedUserType"] == null)
+    {
+        Response.Redirect(Url.Action("Index", "Login"));
+    }
+
+    var LoggedUserTp = HttpContext.Current.Session["LoggedUserType"].ToString();
+    var LoggedUserStatus = HttpContext.Current.Session["LoggedUserStatus"].ToString();
+    var LoggedCompanyStatus = HttpContext.Current.Session["LoggedCompanyStatus"].ToString();
+
+    if ((LoggedUserTp == "CompanyAdmin" || LoggedUserTp == "UserAdmin" || LoggedUserTp == "User") && LoggedUserStatus == "A" && LoggedCompanyStatus == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+
+    Int64 compid = Convert.ToInt64(System.Web.HttpContext.Current.Session["loggedCompID"]);
+
+    CnfDbContext db = new CnfDbContext();
+
+
+
+
+
+    List<SelectListItem> listJobType = new List<SelectListItem>();
+    listJobType.Add(new SelectListItem { Text = "EXPORT", Value = "EXPORT" });
+    listJobType.Add(new SelectListItem { Text = "IMPORT", Value = "IMPORT" });
+
+
+
+    //Party Name: [ ] , Login ID Field loaded in DropdownList
+    List<SelectListItem> listAccountName = new List<SelectListItem>();
+    var result = (from n in db.GlAcchartDbSet
+                  where n.COMPID == compid
+                  select n).ToList();
+
+    foreach (var n in result)
+    {
+        GL_ACCHART aGlAcchart = db.GlAcchartDbSet.FirstOrDefault(e => e.ACCOUNTCD == n.ACCOUNTCD);
+        string substring = Convert.ToString(aGlAcchart.ACCOUNTCD);
+        string subres = substring.Substring(3, 3);
+        if (subres == "103")
+        {
+            listAccountName.Add(new SelectListItem { Text = aGlAcchart.ACCOUNTNM, Value = aGlAcchart.ACCOUNTCD.ToString() });
+        }
+    }
+
+    List<SelectListItem> listRegID = new List<SelectListItem>();
+    listRegID.Add(new SelectListItem { Text = "CHITTAGONG", Value = "CHITTAGONG" });
+    listRegID.Add(new SelectListItem { Text = "COMILLA", Value = "COMILLA" });
+    listRegID.Add(new SelectListItem { Text = "BENAPOLE", Value = "BENAPOLE" });
+    listRegID.Add(new SelectListItem { Text = "DEPZ", Value = "DEPZ" });
+    listRegID.Add(new SelectListItem { Text = "ICD", Value = "ICD" });
+    listRegID.Add(new SelectListItem { Text = "AEPZ", Value = "AEPZ" });
+    listRegID.Add(new SelectListItem { Text = "AIRPORT", Value = "AIRPORT" });
+
+    TimeZoneInfo timeZoneInfo;
+    timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Central Asia Standard Time");
+    DateTime currentDateTime = TimeZoneInfo.ConvertTime(DateTime.Now, timeZoneInfo);
+
+    //permission check
+
+    Int64 loggedUserID = Convert.ToInt64(HttpContext.Current.Session["loggedUserID"].ToString());
+
+
+    var permission_Check = from m in db.AslRoleDbSet
+                           where m.COMPID == compid && m.USERID == loggedUserID
+                               && m.CONTROLLERNAME == "JobDetails" && m.ACTIONNAME == "JobDetailsRF"
+                           select m;
+    var Status = "";
+    foreach (var check in permission_Check)
+    {
+        Status = check.STATUS;
+    }
+
+    if (Status == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+
+
+}
+
+<link href="~/Content/bootstrap%20datepicker%20css/datepicker.css" rel="stylesheet" />
+<link href="~/Content/bootstrap%20datepicker%20css/datepicker3.css" rel="stylesheet" />
+
+<script src="~/Scripts/bootstrap-datepicker.js"></script>
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    @Html.ValidationSummary(true)
+
+    @Html.HiddenFor(model => model.ACnfJob.COMPID, new { id = "txtCompId", @Value = compid })
+
+    <div id="contentHeaderBox">
+        <h1 style="padding-left:16px">Bill Forwarding - Report </h1>
+    </div>
+    <br />
+    <div class="col-md-12">
+        <div class="form-group">
+            <div class="row">
+                <div class="col-md-2">
+                    <span>@Html.Label("name", "Date", htmlAttributes: new { @class = "control-label" })</span>
+                    @Html.TextBoxFor(model => model.ACnfJob.BILLFDT, new { @class = "form-control input-sm", id = "txtFormid", @Value = currentDateTime.ToString("dd-MMM-yyyy"), autofocus = true })
+                </div>
+
+                <div class="col-md-2">
+                    <span>@Html.Label("name", "Type", htmlAttributes: new { @class = "control-label" })</span>
+                    @Html.DropDownListFor(model => model.ACnfJob.JOBTP, listJobType, "--Select Type--", new { @class = "form-control input-sm", id = "txttypeid" })
+                </div>
+
+                <div class="col-md-2">
+                    <span>@Html.Label("name", "Reg.ID", htmlAttributes: new { @class = "control-label" })</span>
+                    @Html.DropDownListFor(model => model.ACnfJob.REGID, listRegID, "--Select REG. ID--", new { @class = "form-control input-sm", id = "txtpartyid" })
+               
+                </div>
+                <div class="col-md-4">
+                    <span>@Html.Label("name", "Party", htmlAttributes: new { @class = "control-label" })</span>
+                    @Html.DropDownListFor(model => model.ACnfJob.PARTYID, listAccountName, "--Select Party--", new { @class = "form-control input-sm", id = "txtpartyid" })
+                </div>
+
+                <div class="col-md-2">
+                    <span><br /></span>
+                    <input type="submit" class="btn btn-primary" value="Report" name="command" formtarget="_blank" />
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+
+
+
+
+    <script type="text/javascript">
+        $('#txtFormid').datepicker({
+            format: "dd-M-yyyy",
+            autoclose: true
+            //format: "yyyy-M-dd"
+        }).on('hide', function () {
+            document.getElementById("txttypeid").focus();
+        });
+
+    </script>
+
+}
+
+
+
+
+
+

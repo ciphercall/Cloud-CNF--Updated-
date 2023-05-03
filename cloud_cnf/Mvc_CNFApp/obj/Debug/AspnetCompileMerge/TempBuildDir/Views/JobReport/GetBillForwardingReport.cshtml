@@ -1,0 +1,820 @@
+﻿@using System.Data
+@using System.Data.Entity.Core.Common.CommandTrees.ExpressionBuilder
+@using System.Data.SqlClient
+@using System.Diagnostics.Eventing.Reader
+@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.PageModel
+
+@{
+    Layout = null;
+    var LoggedCompId = Model.ACnfJob.COMPID;
+    Int64 compid = Convert.ToInt64(LoggedCompId);
+
+
+    string companyName = "", address = "", contactNo = "";
+    CnfDbContext db = new CnfDbContext();
+    var SelectCompanyName = from n in db.AslCompanyDbSet
+
+                            where n.COMPID == compid
+                            select new { n.COMPNM, n.ADDRESS, n.CONTACTNO };
+
+    foreach (var n in SelectCompanyName)
+    {
+        companyName = n.COMPNM;
+        address = n.ADDRESS;
+        contactNo = n.CONTACTNO;
+    }
+    var compNm = companyName;
+    var Address = address;
+    var contactno = contactNo;
+
+
+    DateTime fdate = Convert.ToDateTime(Model.ACnfJob.BILLFDT);
+    string ddt = fdate.ToString("dd-MMM-yyyy");
+    var fromdate = ddt;
+
+    string type = Convert.ToString(Model.ACnfJob.JOBTP);
+    var jobType = type;
+
+    Int64 partyid = Convert.ToInt64(Model.ACnfJob.PARTYID);
+
+
+
+    var SearchPartyName = from n in db.GlAcchartDbSet where n.COMPID == compid && n.ACCOUNTCD == partyid select new { n.ACCOUNTNM };
+    string partyName = "";
+    foreach (var n in SearchPartyName)
+    {
+        partyName = n.ACCOUNTNM;
+    }
+
+    TimeZoneInfo timeZoneInfo;
+    timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Central Asia Standard Time");
+    DateTime currentDateTime = TimeZoneInfo.ConvertTime(DateTime.Now, timeZoneInfo);
+
+
+
+    var findSelectQuery = from m in db.AslDreportDbSet where m.RPTTP == type && m.COMPID == compid && m.RPTNM == "Bill Forward" select new { m.FIELDID };
+    string SelectQueryName = "";
+    foreach (var VARIABLE in findSelectQuery)
+    {
+        SelectQueryName = VARIABLE.FIELDID;
+    }
+}
+
+
+
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <link href="~/Content/reportcss/style.css" rel="stylesheet" />
+    @*
+        <script type="text/javascript">
+                    function ClosePrint() {
+                        var print = document.getElementById("print");
+                        print.style.visibility = "hidden";
+                        //            print.display = false;
+
+                        window.print();
+                    }
+        </script>*@
+
+</head>
+<body style=" background-color:#fafafa;">
+    @*<input id="print" tabindex="1" type="button" value="Print" onclick="ClosePrint()" />*@
+
+    <div style="width: 960px; margin: 0px auto; border: 1px solid #d3d3d3; border-radius: 5px; box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); background: none repeat scroll 0 0 white;">
+        <table id="mainTable" border="0" width="100%">
+            <thead>
+                <tr>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="10%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+
+                </tr>
+                <tr style="background-color: #00689b">
+                    <td colspan="12">
+                        <h3 style="color: white;padding:4px">@compNm</h3>
+                        <p style="color:white;padding-left:4px">@Address<br />  @contactno</p>
+                    </td>
+                    <td colspan="6" style="color: white;padding:8px" align="right">
+                        Powered By<br />Alchemy Software
+                    </td>
+
+                </tr>
+                <tr>
+                    <td colspan="12" align="left" style="padding: 4px; font-weight: bold">Bill Forwarding</td>
+                    <td align="right" colspan="6" style="padding:8px">Print:@currentDateTime.ToString("dd-MM-yy hh:mm tt")</td>
+                </tr>
+                <tr style="outline: thin solid">
+                    <td colspan="7" style="padding:4px;font-weight:bold">Party Name : <span style="font-weight: bold">@partyName</span></td>
+                    <td colspan="4" style="font-weight: bold" align="left"> TYPE : <span style="font-weight:bold">@jobType</span></td>
+
+                    <td colspan="7" align="left" style="font-weight:bold">Date : <span style="font-weight:bold">@fromdate</span> </td>
+
+
+                </tr>
+
+            </thead>
+            <tbody>
+                @{
+                    System.Data.SqlClient.SqlConnection conn = new System.Data.SqlClient.SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["CnfDbContext"].ToString());
+                    string query = string.Format(
+                    "select " + SelectQueryName + ",ISNULL(SUM(CNF_JOBBILL.BILLAMT),0)+ISNULL(CNF_JOB.COMMAMT,0) AS Bill_Amount from CNF_JOB, CNF_JOBBILL " +
+                    " where CNF_JOB.COMPID='{0}' And PARTYID='{1}' And CNF_JOB.JOBTP='{2}' And BILLFDT='{3}' " +
+                    " And CNF_JOB.JOBTP = CNF_JOBBILL.JOBTP And CNF_JOB.JOBYY =CNF_JOBBILL.JOBYY AND CNF_JOB.JOBNO = CNF_JOBBILL.JOBNO" +
+                    " GROUP BY " + SelectQueryName + ",ISNULL(CNF_JOB.COMMAMT,0)",
+                    compid, partyid, type, fdate);
+
+                    System.Data.SqlClient.SqlCommand cmd = new System.Data.SqlClient.SqlCommand(query, conn);
+                    conn.Open();
+                    SqlDataAdapter da = new SqlDataAdapter(cmd);
+                    DataTable ds = new DataTable();
+                    da.Fill(ds);
+
+                    Int64 columnCount = 0;
+                    foreach (DataRow row in ds.Rows)
+                    {
+                        columnCount = Convert.ToInt64(row.ItemArray.Count());
+                    }
+                }
+                @{
+                    Decimal totalAmount = 0, amount = 0;
+                    int rowcount = 0;
+                }
+
+                @if (columnCount == 4)
+                {
+                    rowcount = 0;
+                    <tr style="background-color: #00689b; outline: thin solid">
+                        <td colspan="1" style="color: white">SL</td>
+                        @{
+                    Int64 v = 1;
+                    foreach (DataColumn col in ds.Columns)
+                    {
+                        if (v == 4 || v == 2)
+                        {
+                            string xyz = Convert.ToString(col.ColumnName);
+                            <td colspan="5" style="color: white; padding: 4px" align="center">
+                                @xyz
+                            </td>
+                            v++;
+                        }
+                        else
+                        {
+                            string xyz = Convert.ToString(col.ColumnName);
+                            <td colspan="4" style="color: white; padding: 4px" align="center">
+                                @xyz
+                            </td>
+                            v++;
+                        }
+
+                    }
+
+                    conn.Close();
+
+                        }
+                    </tr>
+
+
+
+
+
+                    foreach (DataRow row in ds.Rows)
+                    {
+                        rowcount++;
+                        //jobno = Convert.ToInt64(row[0]);
+                        Int64 i = Convert.ToInt64(row.ItemArray.Count());
+                        Int64 x = 0;
+                        <tr style="outline:thin solid">
+                            <td colspan="1">@rowcount</td>
+                            @for (Int64 j = 0; j < i; j++)
+                            {
+                                if (x == 4 || x == 2)
+                                {
+                                    var res = row.ItemArray[j];
+                                    try
+                                    {
+                                        string date = Convert.ToDateTime(res).ToString("dd-MM-yyyy");
+                                        <td colspan="5" align="center">
+                                            @date
+                                        </td>
+                                    }
+                                    catch
+                                    {
+                                        <td colspan="5" align="center">
+                                            @res
+                                        </td>
+                                    }
+
+                                    if ((i - 1) == (j))
+                                    {
+                                        amount = Convert.ToDecimal(res);
+                                        totalAmount = Convert.ToDecimal(totalAmount + amount);
+                                    }
+                                    x++;
+                                }
+                                else
+                                {
+                                    var res = row.ItemArray[j];
+                                   try
+                                    {
+                                        string date = Convert.ToDateTime(res).ToString("dd-MM-yyyy");
+                                        <td colspan="4" align="center">
+                                            @date
+                                        </td>
+                                    }
+                                    catch
+                                    {
+                                        <td colspan="4" align="center">
+                                            @res
+                                        </td>
+                                    }
+                                    if ((i - 1) == (j))
+                                    {
+                                        amount = Convert.ToDecimal(res);
+                                        totalAmount = Convert.ToDecimal(totalAmount + amount);
+                                    }
+                                    x++;
+                                }
+
+                            }
+                        </tr>
+                    }
+
+                    conn.Close();
+
+
+                    //Int64 count = 0;
+
+
+                    //foreach (DataRow row in ds.Rows)
+                    //{
+                    //    count = Convert.ToInt64(row.ItemArray.Count());
+                    //}
+                    <tr>
+                        <td align="right" colspan="14">Total :</td>
+                        <td align="right" colspan="4">
+                            @totalAmount
+                        </td>
+                    </tr>
+
+                    @*<tr>
+                            @for (Int64 j = 0; j < count; j++)
+                            {
+                                if ((count - 2) == (j))
+                                {
+                                    <td align="right" colspan="12">
+                                        Total :
+                                    </td>
+                                }
+                                else if ((count - 1) == (j))
+                                {
+                                    <td align="right" colspan="4">
+                                        @totalAmount
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td></td>
+                                }
+                            }
+                        </tr>*@
+                }
+                else if (columnCount == 5)
+                {
+                    rowcount = 0;
+                    <tr style="background-color: #00689b; outline: thin solid">
+                        <td colspan="1" style="color: white">SL</td>
+                        @{
+                    Int64 v = 1;
+                    foreach (DataColumn col in ds.Columns)
+                    {
+                        if (v == 2 || v == 4 || v == 5)
+                        {
+                            string xyz = Convert.ToString(col.ColumnName);
+                            <td colspan="4" style="color: white; padding: 4px" align="center">
+                                @xyz
+                            </td>
+                            v++;
+                        }
+                        else
+                        {
+                            string xyz = Convert.ToString(col.ColumnName);
+                            <td colspan="3" style="color: white; padding: 4px" align="center">
+                                @xyz
+                            </td>
+                            v++;
+                        }
+
+                    }
+
+                    conn.Close();
+
+                        }
+                    </tr>
+
+
+
+                    foreach (DataRow row in ds.Rows)
+                    {
+                        rowcount++;
+                        //jobno = Convert.ToInt64(row[0]);
+                        Int64 i = Convert.ToInt64(row.ItemArray.Count());
+                        Int64 x = 1;
+                        <tr>
+                            <td colspan="1">@rowcount</td>
+                            @for (Int64 j = 0; j < i; j++)
+                            {
+                                if (x == 2 || x == 4 || x == 5)
+                                {
+                                    var res = row.ItemArray[j];
+                                   try
+                                    {
+                                        string date = Convert.ToDateTime(res).ToString("dd-MM-yyyy");
+                                        <td colspan="4" align="center">
+                                            @date
+                                        </td>
+                                    }
+                                    catch
+                                    {
+                                        <td colspan="4" align="center">
+                                            @res
+                                        </td>
+                                    }
+                                    if ((i - 1) == (j))
+                                    {
+                                        amount = Convert.ToDecimal(res);
+                                        totalAmount = Convert.ToDecimal(totalAmount + amount);
+                                    }
+                                    x++;
+                                }
+                                else
+                                {
+                                    var res = row.ItemArray[j];
+                                     try
+                                    {
+                                        string date = Convert.ToDateTime(res).ToString("dd-MM-yyyy");
+                                        <td colspan="3" align="center">
+                                            @date
+                                        </td>
+                                    }
+                                    catch
+                                    {
+                                        <td colspan="3" align="center">
+                                            @res
+                                        </td>
+                                    }
+                                    if ((i - 1) == (j))
+                                    {
+                                        amount = Convert.ToDecimal(res);
+                                        totalAmount = Convert.ToDecimal(totalAmount + amount);
+                                    }
+                                    x++;
+                                }
+
+                            }
+                        </tr>
+                    }
+
+                    conn.Close();
+
+
+
+                    //Int64 count = 0;
+
+
+                    //foreach (DataRow row in ds.Rows)
+                    //{
+                    //    count = Convert.ToInt64(row.ItemArray.Count());
+                    //}
+
+                    <tr>
+                        <td align="right" colspan="14"><b>Total :</b></td>
+                        <td align="right" colspan="4">
+                            <b> @totalAmount</b>
+                        </td>
+                    </tr>
+
+                    @*<tr>
+                            @for (Int64 j = 0; j < count; j++)
+                            {
+                                if ((count - 2) == (j))
+                                {
+                                    <td align="right" colspan="14">
+                                        Total:
+                                    </td>
+                                }
+                                else if ((count - 1) == (j))
+                                {
+                                    <td align="right" colspan="4">
+                                        <h6>@totalAmount</h6>
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td></td>
+                                }
+                            }
+                        </tr>*@
+
+                }
+
+                else if (columnCount == 6)
+                {
+                    rowcount = 0;
+                    <tr style="background-color: #00689b; outline: thin solid">
+                        <td colspan="1" style="color: white">SL</td>
+                        @{
+
+                    foreach (DataColumn col in ds.Columns)
+                    {
+                        string xyz = Convert.ToString(col.ColumnName);
+                        <td colspan="3" style="color: white; padding: 4px" align="center">
+                            @xyz
+                        </td>
+                    }
+
+                    conn.Close();
+
+                        }
+                    </tr>
+
+
+
+                    foreach (DataRow row in ds.Rows)
+                    {
+                        rowcount++;
+                        //jobno = Convert.ToInt64(row[0]);
+                        Int64 i = Convert.ToInt64(row.ItemArray.Count());
+
+                        <tr>
+                            <td colspan="1">@rowcount</td>
+                            @for (Int64 j = 0; j < i; j++)
+                            {
+                                var res = row.ItemArray[j];
+                                  try
+                                    {
+                                        string date = Convert.ToDateTime(res).ToString("dd-MM-yyyy");
+                                        <td colspan="3" align="center">
+                                            @date
+                                        </td>
+                                    }
+                                    catch
+                                    {
+                                        <td colspan="3" align="center">
+                                            @res
+                                        </td>
+                                    }
+                                if ((i - 1) == (j))
+                                {
+                                    amount = Convert.ToDecimal(res);
+                                    totalAmount = Convert.ToDecimal(totalAmount + amount);
+                                }
+                            }
+                        </tr>
+                    }
+
+                    conn.Close();
+
+
+                    //Int64 count = 0;
+
+
+
+                    //foreach (DataRow row in ds.Rows)
+                    //{
+                    //    count = Convert.ToInt64(row.ItemArray.Count());
+                    //}
+
+                    <tr>
+                        <td align="right" colspan="15">Total :</td>
+                        <td align="right" colspan="3">
+                            @totalAmount
+                        </td>
+                    </tr>
+                    @*<tr>
+                            @for (Int64 j = 0; j < count; j++)
+                            {
+                                if ((count - 2) == (j))
+                                {
+                                    <td align="right" colspan="11" style="font-weight:bold">
+                                        Total:
+                                    </td>
+                                }
+                                else if ((count - 1) == (j))
+                                {
+                                    <td align="center" colspan="3" style="font-weight:bold">
+                                        @totalAmount
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td></td>
+                                }
+                            }
+                        </tr>*@
+
+                }
+                else if (columnCount == 7)
+                {
+                    rowcount = 0;
+
+                    <tr style="background-color: #00689b; outline: thin solid">
+                        <td colspan="1" style="color: white">SL</td>
+                        @{
+                    Int64 V = 1;
+                    foreach (DataColumn col in ds.Columns)
+                    {
+                        if (V == 2 || V == 5 || V == 6 || V == 7)
+                        {
+                            string xyz = Convert.ToString(col.ColumnName);
+                            <td colspan="3" style="color: white; padding: 4px" align="center">
+                                @xyz
+                            </td>
+                            V++;
+                        }
+                        else
+                        {
+                            string xyz = Convert.ToString(col.ColumnName);
+                            <td colspan="2" style="color: white; padding: 4px" align="center">
+                                @xyz
+                            </td>
+                            V++;
+                        }
+
+                    }
+
+                    conn.Close();
+
+                        }
+                    </tr>
+
+
+
+                    foreach (DataRow row in ds.Rows)
+                    {
+                        rowcount++;
+                        //jobno = Convert.ToInt64(row[0]);
+                        Int64 i = Convert.ToInt64(row.ItemArray.Count());
+                        Int64 x = 1;
+                        <tr>
+                            <td colspan="1">@rowcount</td>
+                            @for (Int64 j = 0; j < i; j++)
+                            {
+                                if (x == 2 || x == 5 || x == 6 || x == 7)
+                                {
+                                    var res = row.ItemArray[j];
+                                     try
+                                    {
+                                        string date = Convert.ToDateTime(res).ToString("dd-MM-yyyy");
+                                        <td colspan="3" align="center">
+                                            @date
+                                        </td>
+                                    }
+                                    catch
+                                    {
+                                        <td colspan="3" align="center">
+                                            @res
+                                        </td>
+                                    }
+                                    if ((i - 1) == (j))
+                                    {
+                                        amount = Convert.ToDecimal(res);
+                                        totalAmount = Convert.ToDecimal(totalAmount + amount);
+                                    }
+                                    x++;
+                                }
+                                else
+                                {
+                                    var res = row.ItemArray[j];
+                                     try
+                                    {
+                                        string date = Convert.ToDateTime(res).ToString("dd-MM-yyyy");
+                                        <td colspan="2" align="center">
+                                            @date
+                                        </td>
+                                    }
+                                    catch
+                                    {
+                                        <td colspan="2" align="center">
+                                            @res
+                                        </td>
+                                    }
+                                    if ((i - 1) == (j))
+                                    {
+                                        amount = Convert.ToDecimal(res);
+                                        totalAmount = Convert.ToDecimal(totalAmount + amount);
+                                    }
+                                    x++;
+                                }
+
+                            }
+                        </tr>
+                    }
+
+                    conn.Close();
+
+
+                    //Int64 count = 0;
+
+
+                    //foreach (DataRow row in ds.Rows)
+                    //{
+                    //    count = Convert.ToInt64(row.ItemArray.Count());
+                    //}
+
+                    <tr>
+                        <td align="right" colspan="15">Total :</td>
+                        <td align="right" colspan="3">
+                            @totalAmount
+                        </td>
+                    </tr>
+                    @*<tr>
+                            @for (Int64 j = 0; j < count; j++)
+                            {
+                                if ((count - 2) == (j))
+                                {
+                                    <td align="right" colspan="14">
+                                        Total:
+                                    </td>
+                                }
+                                else if ((count - 1) == (j))
+                                {
+                                    <td align="right" colspan="4">
+                                        @totalAmount
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td></td>
+                                }
+                            }
+                        </tr>*@
+
+                }
+                else if (columnCount == 8)
+                {
+                    rowcount = 0;
+
+                    <tr style="background-color: #00689b; outline: thin solid">
+                        <td colspan="1" style="color: white">SL</td>
+                        @{
+                    Int64 V = 1;
+                    foreach (DataColumn col in ds.Columns)
+                    {
+                        if (V == 4 || V == 8)
+                        {
+                            string xyz = Convert.ToString(col.ColumnName);
+                            <td colspan="3" style="color: white; padding: 4px" align="center">
+                                @xyz
+                            </td>
+                            V++;
+                        }
+                        else
+                        {
+                            string xyz = Convert.ToString(col.ColumnName);
+                            <td colspan="2" style="color: white; padding: 4px" align="center">
+                                @xyz
+                            </td>
+                            V++;
+                        }
+
+                    }
+
+                    conn.Close();
+
+                        }
+                    </tr>
+
+
+                    foreach (DataRow row in ds.Rows)
+                    {
+                        rowcount++;
+
+                        //jobno = Convert.ToInt64(row[0]);
+                        Int64 i = Convert.ToInt64(row.ItemArray.Count());
+                        Int64 x = 1;
+                        <tr>
+                            <td colspan="1">@rowcount</td>
+                            @for (Int64 j = 0; j < i; j++)
+                            {
+                                if (x == 4 || x == 8)
+                                {
+                                    var res = row.ItemArray[j];
+  try
+                                    {
+                                        string date = Convert.ToDateTime(res).ToString("dd-MM-yyyy");
+                                        <td colspan="3" align="center">
+                                            @date
+                                        </td>
+                                    }
+                                    catch
+                                    {
+                                        <td colspan="3" align="center">
+                                            @res
+                                        </td>
+                                    }
+                                    if ((i - 1) == (j))
+                                    {
+                                        amount = Convert.ToDecimal(res);
+                                        totalAmount = Convert.ToDecimal(totalAmount + amount);
+                                    }
+                                    x++;
+                                }
+                                else
+                                {
+                                    var res = row.ItemArray[j];
+
+                                     try
+                                    {
+                                        string date = Convert.ToDateTime(res).ToString("dd-MM-yyyy");
+                                        <td colspan="3" align="center">
+                                            @date
+                                        </td>
+                                    }
+                                    catch
+                                    {
+                                        <td colspan="3" align="center">
+                                            @res
+                                        </td>
+                                    }
+                                    if ((i - 1) == (j))
+                                    {
+                                        amount = Convert.ToDecimal(res);
+                                        totalAmount = Convert.ToDecimal(totalAmount + amount);
+                                    }
+                                    x++;
+                                }
+
+                            }
+                        </tr>
+                    }
+
+                    conn.Close();
+
+
+                    Int64 count = 0;
+
+
+                    foreach (DataRow row in ds.Rows)
+                    {
+                        count = Convert.ToInt64(row.ItemArray.Count());
+                    }
+
+                    <tr>
+                        <td align="right" colspan="14">Total :</td>
+                        <td align="right" colspan="2">
+                            @totalAmount
+                        </td>
+                    </tr>
+                    @*<tr>
+                            @for (Int64 j = 0; j < count; j++)
+                            {
+                                if ((count - 2) == (j))
+                                {
+                                    <td align="right" colspan="14">
+                                        Total:
+                                    </td>
+                                }
+                                else if ((count - 1) == (j))
+                                {
+                                    <td align="right" colspan="4">
+                                        @totalAmount
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td></td>
+                                }
+                            }
+                        </tr>*@
+
+                }
+
+            </tbody>
+        </table>
+
+
+    </div>
+
+
+
+</body>
+
+</html>

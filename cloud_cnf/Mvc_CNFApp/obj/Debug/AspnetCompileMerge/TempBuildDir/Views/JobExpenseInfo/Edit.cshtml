@@ -1,0 +1,545 @@
+﻿@using System.Net.Mime
+@using System.Web.UI.WebControls
+@using Microsoft.Ajax.Utilities
+@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.PageModel
+
+@{
+    ViewBag.Title = "Edit";
+
+    if (HttpContext.Current.Session["LoggedUserType"] == null)
+    {
+        Response.Redirect(Url.Action("Index", "Login"));
+    }
+
+    var LoggedUserTp = HttpContext.Current.Session["LoggedUserType"].ToString();
+    var LoggedUserStatus = HttpContext.Current.Session["LoggedUserStatus"].ToString();
+    var LoggedCompanyStatus = HttpContext.Current.Session["LoggedCompanyStatus"].ToString();
+
+    if ((LoggedUserTp == "CompanyAdmin" || LoggedUserTp == "UserAdmin" || LoggedUserTp == "User") && LoggedUserStatus == "A" && LoggedCompanyStatus == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+
+    Int64 compid = Convert.ToInt64(System.Web.HttpContext.Current.Session["loggedCompID"]);
+
+    CnfDbContext db = new CnfDbContext();
+
+    //List<SelectListItem> listTransNO = new List<SelectListItem>();
+    //var resultJobNo = (from n in db.CnfJobDbSet where compid==n.COMPID select n).ToList();
+    //var resultJobNo=(from cnfjob in db.CnfJobDbSet join glacchart in db.GlAcchartDbSet on cnfjob.COMPID equals glacchart.COMPID
+    //                 where cnfjob.PARTYID == glacchart.ACCOUNTCD select new { cnfjob.JOBNO });
+
+    //var resultJobNo = (db.CnfJobDbSet.Join(db.GlAcchartDbSet, cnfjob => cnfjob.COMPID, glacchart => glacchart.COMPID,
+    //    (cnfjob, glacchart) => new { cnfjob, glacchart })
+    //    .Where(a => a.cnfjob.PARTYID == a.glacchart.ACCOUNTCD)
+    //    .Select(a => new { a.cnfjob.JOBNO, a.cnfjob.JOBYY, a.cnfjob.JOBTP, a.glacchart.ACCOUNTNM, a.cnfjob.Cnf_JobID }).OrderBy(a => a.JOBYY).ThenBy(a => a.JOBNO));
+    //foreach (var n in resultJobNo)
+    //{
+    //    if (n != null)
+    //    {
+    //        listJobNo.Add(new SelectListItem { Text = (n.JOBNO.ToString() + " | " + n.JOBYY.ToString() + " | " + n.JOBTP + " | " + n.ACCOUNTNM.ToString()), Value = n.Cnf_JobID.ToString() });
+    //    }
+    //}
+
+
+    //List<SelectListItem> listExpenseCD = new List<SelectListItem>();
+    //var resultExpenseName = (from n in db.GlAcchartDbSet where n.COMPID == compid select n).ToList();
+
+    //foreach (var n in resultExpenseName)
+    //{
+    //    if (n != null)
+    //    {
+    //        listExpenseCD.Add(new SelectListItem { Text = (n.ACCOUNTNM), Value = n.ACCOUNTCD.ToString() });
+    //    }
+    //}
+
+
+    //List<SelectListItem> listTransNO = new List<SelectListItem>();
+    //var cnfJobExpMst = (from n in db.CnfJobexpmstDbSet where n.COMPID == compid select n).ToList();
+    //foreach (var res in cnfJobExpMst)
+    //{
+    //    if (res != null)
+    //    {
+    //        listTransNO.Add(new SelectListItem { Text = res.TRANSNO.ToString(), Value = res.TRANSNO.ToString() });
+    //    }
+    //}
+    Int64 jobno = 0;
+}
+
+@*<link href="~/Content/themes/base/jquery-ui.css" rel="stylesheet" />
+
+
+<script src="~/Scripts/jquery-ui-1.10.4.min.js"></script>*@
+@*<script src="~/Scripts/jquery-1.9.1.min.js"></script>*@
+
+
+
+<link href="~/Content/bootstrap_datepicker_css/datepicker.css" rel="stylesheet" />
+<link href="~/Content/bootstrap_datepicker_css/datepicker3.css" rel="stylesheet" />
+
+<script src="~/Scripts/bootstrap-datepicker.js"></script>
+
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    @Html.ValidationSummary(true)
+
+    @Html.HiddenFor(model => model.ACnfJobexpmst.COMPID, new { id = "txtCompId", @Value = compid })
+
+    <div id="contentHeaderBox">
+        <h1 style="padding-left:16px">Edit Job Wise Expense Information</h1>
+    </div>
+    <br />
+    <div class="col-md-12">
+        <div class="form-group">
+            <div class="row">
+                <div class="col-md-2">
+                    <span><br /></span>
+                    <input type="submit" class="btn btn-primary" value="New" name="command" />
+                    @if (ViewBag.UpdatePermission != null)
+                    {
+                        <h5 style="color: #C03523">@ViewBag.UpdatePermission</h5>
+                    }
+                </div>
+                <div class="col-md-2">
+                    <span>@Html.Label("name", "Date", htmlAttributes: new { @class = "control-label" })</span>
+                    @if (TempData["transdate"] != null)
+                    {
+                        @Html.TextBoxFor(model => model.ACnfJobexpmst.TRANSDT, new { @class = "form-control input-sm", id = "idTRANSDT", @Value = TempData["transdate"]})
+                    }
+                    else
+                    {
+                        @Html.TextBoxFor(model => model.ACnfJobexpmst.TRANSDT, new { @class = "form-control input-sm", id = "idTRANSDT"})
+                    }
+                </div>
+                <div class="col-md-2">
+                    <span>@Html.Label("name", "Invoice No", htmlAttributes: new { @class = "control-label" })</span>
+                    @if (TempData["TRANSNO"]!=null)
+                    {
+                        DateTime dd=Convert.ToDateTime(TempData["transdate"]);
+                        List<SelectListItem> listTransNO = new List<SelectListItem>();
+                        var cnfJobExpMst = (from n in db.CnfJobexpmstDbSet where n.COMPID == compid && n.TRANSDT == dd select n).ToList();
+                        foreach (var res in cnfJobExpMst)
+                        {
+                            if (res != null)
+                            {
+                                listTransNO.Add(new SelectListItem { Text = res.TRANSNO.ToString(), Value = res.TRANSNO.ToString() });
+                            }
+                        }
+                          @Html.DropDownListFor(model => model.ACnfJobexpmst.TRANSNO, listTransNO, new { @class = "form-control input-sm", id = "txtTRANSNO", @Value = TempData["TRANSNO"] })
+                    }
+                    else
+                    {
+                         @Html.DropDownListFor(model => model.ACnfJobexpmst.TRANSNO, new SelectList(string.Empty, "Value", "Text"), "-Select-", new { @class = "form-control input-sm", id = "txtTRANSNO" })
+                    }
+                  
+                   
+                </div>
+                @*Submit Button*@
+                <input id="SearchButtonID" type="submit" class="btn btn-info" value="Search" name="command" style="display: none" />
+
+                <div class="col-md-1">
+                    <span>@Html.Label("name", "Year", htmlAttributes: new { @class = "control-label" })</span>
+                    @Html.TextBoxFor(model => model.ACnfJobexpmst.TRANSYY, new { @class = "form-control input-sm", id = "txtTRANSYY", @readonly = "readonly" })
+                </div>
+                <div class="col-md-2">
+                    <span>@Html.Label("name", "Job Year", htmlAttributes: new { @class = "control-label" })</span>
+                    @Html.TextBoxFor(model => model.ACnfJobexpmst.JOBYY, new { @class = "form-control input-sm", id = "txtJOBYY", @readonly = "readonly" })
+                </div>
+                <div class="col-md-2">
+                    <span>@Html.Label("name", "Job Type", htmlAttributes: new { @class = "control-label" })</span>
+                    @Html.TextBoxFor(model => model.ACnfJobexpmst.JOBTP, new { @class = "form-control input-sm", id = "txtJOBTP", @readonly = "readonly" })
+                </div>
+                <div class="col-md-1">
+                    <span>@Html.Label("name", "JobNo", htmlAttributes: new { @class = "control-label" })</span>
+                    @Html.TextBoxFor(model => model.ACnfJobexpmst.JOBNO, new { @class = "form-control input-sm", id = "txtJOBNO", @readonly = "readonly" })
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                @*<div class="col-md-4">
+                        <span>@Html.Label("name", "Job No", htmlAttributes: new { @class = "control-label" })</span>
+                        @Html.TextBoxFor(model => model.ACnfJobexpmst.JOBNO, new { @class = "form-control input-sm", id = "txtJOBNO", @readonly = "readonly" })
+                    </div>*@
+                <div class="col-md-4">
+                    <span>@Html.Label("name", "Expense BY", htmlAttributes: new { @class = "control-label" })</span>
+                    @if (TempData["AccountName"] != null)
+                    {
+                        @Html.TextBoxFor(model => model.AGL_acchart.ACCOUNTNM, new { @class = "form-control input-sm", id = "txtACCOUNTNM", @readonly = "readonly", @Value = TempData["AccountName"] })
+                    }
+                    else
+                    {
+                        @Html.TextBoxFor(model => model.AGL_acchart.ACCOUNTNM, new { @class = "form-control input-sm", id = "txtACCOUNTNM", @readonly = "readonly" })
+                    }
+                    @Html.HiddenFor(model => model.ACnfJobexpmst.EXPCD, new { id = "txtEXPCD", @readonly = "readonly" })
+                </div>
+                <div class="col-md-3">
+                    <span>@Html.Label("name", "Remarks", htmlAttributes: new { @class = "control-label" })</span>
+                    @Html.TextBoxFor(model => model.ACnfJobexpmst.REMARKS, new { @class = "form-control input-sm", id = "txtREMARKS", @readonly = "readonly" })
+                </div>
+                <div class="col-md-2"></div>
+                <div class="col-md-1">
+                    <span><br /></span>
+                    <input type="submit" class="btn btn-success" value="Print" name="command" formtarget="_blank" />
+                </div>
+                
+                <div class="col-md-1">
+                    <span><br /></span>
+                    <input type="submit" class="btn btn-success" value="Complete" name="command" />
+                </div>
+               
+                <div class="col-md-1"></div>
+            </div>
+
+
+            @Html.TextBoxFor(model => model.ACnfJobexpmst.INSLTUDE, new { id = "latlonPos", style = "display: none;" })
+
+            <input id="lat" type="hidden" />
+            <input id="lon" type="hidden" />
+        </div>
+
+
+
+        @*@if (TempData["message"] != null)
+            {
+                <div class="text-center">
+                    <h6 style="color: #BD7F1C">@TempData["message"] </h6>
+                </div>
+                <br />
+            }*@
+
+    </div>
+    <div>
+        <hr />
+    </div>
+    <br />
+    <div class="col-md-12">
+        <div class="row">
+            
+            @if (TempData["TRANSNO"] != null)
+            {
+                List<SelectListItem> listEspenseName = new List<SelectListItem>();
+                var findName = (from n in db.CnfExpenseDbSet where n.COMPID == compid select n).ToList();
+                foreach (var x in findName)
+                {
+                    if (x != null)
+                    {
+                        listEspenseName.Add(new SelectListItem { Text = x.EXPNM, Value = x.EXPID.ToString() });
+                    }
+
+                }
+              
+                    @Html.HiddenFor(model => model.ACnfJobexp.cnf_JobEXPID, new { @readonly = "readonly" })
+                    @Html.HiddenFor(model => model.ACnfJobexp.COMPID, new { @readonly = "readonly" })
+                    @Html.HiddenFor(model => model.ACnfJobexp.TRANSDT, new { @readonly = "readonly" })
+                    @Html.HiddenFor(model => model.ACnfJobexp.TRANSNO, new { @readonly = "readonly" })
+                    @Html.HiddenFor(model => model.ACnfJobexp.TRANSYY, new { @readonly = "readonly" })
+                    @Html.HiddenFor(model => model.ACnfJobexp.JOBYY, new { @readonly = "readonly" })
+                    @Html.HiddenFor(model => model.ACnfJobexp.JOBTP, new { @readonly = "readonly" })
+                    @Html.HiddenFor(model => model.ACnfJobexp.JOBNO, new { @readonly = "readonly" })
+                    @Html.HiddenFor(model => model.ACnfJobexp.EXPCD, new { @readonly = "readonly" })
+                    @Html.HiddenFor(model => model.ACnfJobexp.EXPSL, new { @readonly = "readonly" })
+                
+                    <div class="col-md-5">
+                        <span>  @Html.Label("name", "Expense Particulars", htmlAttributes: new { @class = "control-label" })</span>
+                        @if (TempData["expenseName"] != null)
+                        {
+                            @Html.TextBoxFor(model => model.AcCnfExpense.EXPNM, new { @class = "form-control input-sm", @readonly = "readonly", @Value = TempData["expenseName"] })
+                            @Html.HiddenFor(model => model.ACnfJobexp.EXPID, new { @readonly = "readonly" })
+                        }
+                        else
+                        {
+                            @Html.DropDownListFor(model => model.ACnfJobexp.EXPID, listEspenseName, "-Select-", new { id = "expenseid", @class = "form-control input-sm" })
+                        }
+                    </div>
+                    <div class="col-md-2">
+                        <span>  @Html.Label("name", "Amount", htmlAttributes: new { @class = "control-label" })</span>
+                        @Html.TextBoxFor(model => model.ACnfJobexp.EXPAMT, new { @class = "form-control input-sm", id = "txtBrand" })
+                    </div>
+                    <div class="col-md-3">
+                        <span>  @Html.Label("name", "Remarks", htmlAttributes: new { @class = "control-label" })</span>
+                        @Html.TextBoxFor(model => model.ACnfJobexp.REMARKS, new { @class = "form-control input-sm", id = "txtBrand" })
+                    </div>
+
+
+
+                    if (TempData["ShowAddButton"] == null)
+                    {
+                        <div class="col-md-2">
+                            <span> <br /></span>
+                            <input type="submit" class="btn btn-success" value="Update" id="btnUpdate" name="command" style="margin-top: 0px; margin-left: 5px" />
+                        </div>
+                    }
+
+                    else
+                    {
+                        <div class="col-md-2">
+                            <span> <br /></span>
+                            <input type="submit" class="btn btn-success" value="Add" id="btnAdd" name="command" style="margin-top: 0px; margin-left: 5px" />
+                        </div>
+                    }
+               
+            }
+           
+        </div>
+
+        <br />
+        <div class="row">
+           
+            @if (TempData["TRANSNO"] != null)
+            {
+                var transNO = Convert.ToInt64(TempData["TRANSNO"]);
+                var transYear = Convert.ToInt64(TempData["TRANSYY"]);
+                Int64 LogCompId = Convert.ToInt64(HttpContext.Current.Session["loggedCompID"]);
+                jobno = Convert.ToInt64(TempData["JOBNO"]);
+                var res = db.CnfJobexpDbSet.Where(d => d.TRANSNO == transNO && d.COMPID == LogCompId && d.TRANSYY == transYear && d.JOBNO == jobno);
+
+                var expenseName = (from n in db.CnfExpenseDbSet where n.COMPID == compid select n).ToList();
+
+               
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <tr>
+                                <td align="center">
+                                    <h6>SL</h6>
+                                </td>
+                                <td>
+                                    <h6>Expense Particulars</h6>
+                                </td>
+                                <td>
+                                    <h6>Amount</h6>
+                                </td>
+                                <td>
+                                    <h6>Remarks</h6>
+                                </td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            @{
+                Decimal totalAmount = 0;
+                            }
+                            @foreach (var item in res)
+                            {
+                                <tr>
+                                    @Html.HiddenFor(model => item.cnf_JobEXPID, new { @readonly = "readonly" })
+                                    @Html.HiddenFor(model => item.COMPID, new { @readonly = "readonly" })
+                                    @Html.HiddenFor(model => item.TRANSDT, new { @readonly = "readonly" })
+                                    @Html.HiddenFor(model => item.TRANSNO, new { @readonly = "readonly" })
+                                    @Html.HiddenFor(model => item.TRANSYY, new { @readonly = "readonly" })
+                                    @Html.HiddenFor(model => item.JOBYY, new { @readonly = "readonly" })
+                                    @Html.HiddenFor(model => item.JOBTP, new { @readonly = "readonly" })
+                                    @Html.HiddenFor(model => item.JOBNO, new { @readonly = "readonly" })
+                                    @Html.HiddenFor(model => item.EXPCD, new { @readonly = "readonly" })
+
+                                    <td align="center">
+                                        @Html.DisplayFor(model => item.EXPSL, new { id = "txtExpNm", @readonly = "readonly" })
+                                    </td>
+                                    <td>
+                                        @foreach (var x in expenseName)
+                                        {
+                                            if (x != null && item.EXPID == x.EXPID)
+                                            {
+                                                @Html.DisplayFor(model => x.EXPNM, new { @readonly = "readonly" })
+                                            }
+                                        }
+                                        @Html.HiddenFor(model => item.EXPID, new { id = "txtExpNm", @readonly = "readonly" })
+                                    </td>
+                                    <td>
+                                        @Html.DisplayFor(model => item.EXPAMT, new { id = "txtExpNm", @readonly = "readonly" })
+                                    </td>
+                                    <td>
+                                        @Html.DisplayFor(model => item.REMARKS, new { id = "txtExpNm", @readonly = "readonly" })
+                                    </td>
+                                    <td>
+                                        <span>
+                                            <a href="@Url.Action("gridUpdate_Edit", new { id = item.cnf_JobEXPID, cid = item.COMPID, TransYear = item.TRANSYY, TransNO = item.TRANSNO, Serial = item.EXPSL, ExpCD=item.EXPCD })" class="btn btn-sm btn-info">
+                                                <span class="glyphicon glyphicon-pencil"></span>
+                                            </a>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span>
+                                            <a href="@Url.Action("gridDelete_Edit", new { id = item.cnf_JobEXPID, cid = item.COMPID, TransYear = item.TRANSYY, TransNO = item.TRANSNO, Serial = item.EXPSL, ExpCD = item.EXPCD })" class="btn btn-sm btn-danger">
+                                                <span class="glyphicon glyphicon-remove"></span>
+                                            </a>
+                                        </span>
+
+                                    </td>
+
+                                </tr>
+                                        totalAmount = totalAmount + Convert.ToDecimal(item.EXPAMT);
+                            }
+                            <tr>
+                                <td></td>
+                                <td>
+                                    <h6>Total Amount</h6>
+                                </td>
+                                <td>
+                                    <h6><strong>@totalAmount</strong></h6>
+                                </td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        </table>
+                    </div>
+               
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped"></table>
+                </div>
+            }
+        </div>
+    </div>
+
+
+
+
+
+
+
+
+
+
+
+
+            //Latitute & longitude
+            <script src="http://maps.google.com/maps/api/js?sensor=false">
+            </script>
+
+            <script language="javascript" type="text/javascript">
+                $(function () {
+                    navigator.geolocation.getCurrentPosition(showPosition);
+                    //navigator.geolocation.getCurrentPosition(showPosition, positionError);
+
+                    function showPosition(position) {
+                        var coordinates = position.coords;
+                        $("#lat").val(coordinates.latitude);
+                        $("#lon").val(coordinates.longitude);
+
+                        $("#latlonPos").val(
+                            $("#lat").val() + "," + $("#lon").val()
+                        );
+                        $("#latlonRms").val(
+                            $("#lat").val() + "," + $("#lon").val()
+                        );
+                    }
+                });
+            </script>
+
+
+            <script type="text/javascript">
+
+                $(document).ready(function () {
+
+                    $('#idTRANSDT').datepicker({
+                        format: "dd-M-yyyy",
+                        autoclose: true,
+                        todayHighlight: true,
+                        showOnFocus: true,
+                    }).on('show', function(e) {
+                        if (e.date) {
+                            $(this).data('stickyDate', e.date);
+                        } else {
+                            $(this).data('stickyDate', null);
+                        }
+                    }).on('hide', function(e) {
+                        var stickyDate = $(this).data('stickyDate');
+
+                        if (!e.date && stickyDate) {
+                            $(this).datepicker('setDate', stickyDate);
+                            $(this).data('stickyDate', null);
+                        }
+
+                        var date = $('#idTRANSDT').val();
+                        
+                        if (date != "") {
+                            $.ajax
+                      ({
+                          url: '@Url.Action("GetJOBNO", "JobExpenseInfo")',
+                          type: 'post',
+                          dataType: "json",
+                          data: { theDate: date },
+                          success: function (data) {
+
+
+                              $("#txtTRANSNO").empty();
+                              $("#txtTRANSNO").append('<option value="'
+                                  + "select" + '">'
+                                  + "select" + '</option>');
+
+
+                              $.each(data, function (i, memo) {
+
+                                  $("#txtTRANSNO").append('<option value="'
+                                      + memo.Value + '">'
+                                      + memo.Text + '</option>');
+
+                              });
+
+
+                          }
+
+                      });
+                        }
+                      
+
+                  
+
+                });
+
+
+                   
+
+                    //if ($('#idTRANSDT').val() != "") {
+                    //    document.getElementById("expenseid").focus();
+                    //} else {
+                    //    document.getElementById("idTRANSDT").focus();
+                    //}
+
+
+                    $('#txtTRANSNO').change(function () {
+                        //When the UserName (Dropdown list) changed then get the "User ID" from "ASLUSERCO" table
+                        var changedDropDown = $('#txtTRANSNO option:selected').val();
+
+                        var idTRANSDT = document.getElementById('idTRANSDT');
+                        var txtTRANSYY = document.getElementById('txtTRANSYY');
+                        var txtJOBYY = document.getElementById('txtJOBYY');
+                        var txtJOBTP = document.getElementById('txtJOBTP');
+                        var txtJOBNO = document.getElementById('txtJOBNO');
+                        var txtACCOUNTNM = document.getElementById('txtACCOUNTNM');
+                        var txtREMARKS = document.getElementById('txtREMARKS');
+                        var txtEXPCD = document.getElementById('txtEXPCD');
+
+                        $.getJSON(
+                            "/JobExpenseInfo/TRANSNOChanged", { "ChangedDropDown": changedDropDown },
+                            function (myData) {
+                                idTRANSDT.value = myData.TRANSDT;
+                                txtTRANSYY.value = myData.TRANSYY;
+                                txtJOBYY.value = myData.JOBYY;
+                                txtJOBTP.value = myData.JOBTP;
+                                txtJOBNO.value = myData.JOBNO;
+                                txtACCOUNTNM.value = myData.ACCOUNTNM;
+                                txtREMARKS.value = myData.REMARKS;
+                                txtEXPCD.value = myData.EXPCD;
+                                $('#SearchButtonID').click();
+                            });
+
+                    });
+
+                });
+
+            </script>
+
+}
+
+
+

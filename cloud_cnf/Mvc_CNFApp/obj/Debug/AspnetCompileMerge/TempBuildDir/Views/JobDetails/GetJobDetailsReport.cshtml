@@ -1,0 +1,533 @@
+﻿@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.PageModel
+@{
+    Layout = null;
+    var LoggedCompId = Model.ACnfJob.COMPID;
+    Int64 compid = Convert.ToInt64(LoggedCompId);
+
+
+    string companyName = "", address = "", contactNo = "";
+    CnfDbContext db = new CnfDbContext();
+    var SelectCompanyName = from n in db.AslCompanyDbSet
+
+                            where n.COMPID == compid
+                            select new { n.COMPNM, n.ADDRESS, n.CONTACTNO };
+
+    foreach (var n in SelectCompanyName)
+    {
+        companyName = n.COMPNM;
+        address = n.ADDRESS;
+        contactNo = n.CONTACTNO;
+    }
+    var compNm = companyName;
+    var Address = address;
+    var contactno = contactNo;
+
+    DateTime fdate = Convert.ToDateTime(Model.ACnfJob.BILLFDT);
+    string ddt = fdate.ToString("dd-MMM-yyyy");
+    var fromdate = ddt;
+
+    string forheader = ddt.Substring(3, 8);
+
+
+    var jobtype = Model.ACnfJob.JOBTP;
+    var regid = Model.ACnfJob.REGID;
+    Int64 partyid = Convert.ToInt64(Model.ACnfJob.PARTYID);
+    var search_partyname = (from n in db.CnfPartyDbSet where n.COMPID == compid && n.PARTYID == partyid select n).ToList();
+    string partyname = "",partyaddress="";
+    foreach (var ss in search_partyname)
+    {
+        partyname = ss.PARTYNM;
+        partyaddress = ss.ADDRESS;
+    }
+
+
+
+    TimeZoneInfo timeZoneInfo;
+    timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Central Asia Standard Time");
+    DateTime currentDateTime = TimeZoneInfo.ConvertTime(DateTime.Now, timeZoneInfo);
+
+    string amount = "";
+    string AmtConv = "";
+    Decimal totalAmount = 0;
+    
+}
+
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <link href="~/Content/reportcss/style.css" rel="stylesheet" />
+    @*<script type="text/javascript">
+            function ClosePrint() {
+                var print = document.getElementById("print");
+                print.style.visibility = "hidden";
+                //            print.display = false;
+
+                window.print();
+            }
+        </script>*@
+
+</head>
+
+<body style="background-color:#fafafa">
+
+    @*<input id="print" tabindex="1" type="button" value="Print" onclick="ClosePrint()" />*@
+    <div style="width: 100%; margin: 0px auto; border: 1px solid #d3d3d3; border-radius: 5px; box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); background: none repeat scroll 0 0 white;">
+        <table id="mainTable" border="0" width="100%">
+            <thead>
+                <tr>
+                    <td width="1%"></td>
+                    <td width="2%"></td>
+                    <td width="2%"></td>
+                    <td width="4%"></td>
+                    <td width="4%"></td>
+                    <td width="4%"></td>
+                    <td width="4%"></td>
+                    <td width="4%"></td>
+                    <td width="2%"></td>
+                    <td width="3%"></td>
+                    <td width="4%"></td>
+                    <td width="4%"></td>
+                    <td width="4%"></td>
+                    <td width="4%"></td>
+                    <td width="4%"></td>
+                    <td width="4%"></td>
+                    <td width="3%"></td>
+                    <td width="2%"></td>
+                    <td width="3%"></td>
+                    <td width="3%"></td>
+                    <td width="4%"></td>
+                    <td width="4%"></td>
+
+                    <td width="3%"></td>
+                    <td width="3%"></td>
+                    <td width="3%"></td>
+                    <td width="3%"></td>
+
+                    <td width="2%"></td>
+                    <td width="2%"></td>
+                    <td width="2%"></td>
+                  
+
+                </tr>
+                <tr style="background-color: white">
+                    <td colspan="22" align="left">
+                        <h3 style="color: black;padding:4px">@compNm</h3>
+                        <p style="color:black;padding-left:4px">@Address<span>  @contactno</span></p>
+                    </td>
+
+                    <td colspan="7" style="color: black; padding: 8px" align="right">
+                        Powered By<br />Alchemy Software
+                    </td>
+
+                </tr>
+
+                <tr>
+                    <td colspan="7"></td>
+                    <td colspan="15" align="center" style="padding-left: 15px; font-weight: bold">Clearing and Forwarding </td>
+                    <td align="right" colspan="7" style="padding:8px">Print:@currentDateTime.ToString("dd-MM-yy hh:mm tt")</td>
+                </tr>
+                <tr>
+
+                    <td colspan="13" align="left" style="font-weight:bold">To </td>
+
+                    <td colspan="16" align="left" style="font-weight:bold;padding-left:20px">@jobtype - @forheader</td>
+
+                </tr>
+                <tr>
+
+                    <td colspan="29" align="left" style="font-weight:bold"> <span style="font-weight:bold">@partyname</span> </td>
+
+                   
+
+                </tr>
+                <tr>
+
+                    <td colspan="29" align="left"> <span>@partyaddress</span> </td>
+
+                    
+
+                </tr>
+                @{
+
+                }
+                <tr style="outline: thin solid">
+                    <td colspan="14" style="padding:4px;font-weight:bold">Date : <span style="font-weight: bold">@fromdate</span></td>
+
+                    <td colspan="15" align="left" style="font-weight:bold">Reg. ID : <span style="font-weight:bold">@regid</span> </td>
+
+
+
+                </tr>
+
+
+
+
+
+
+            </thead>
+
+        <tbody>
+
+
+
+        @{
+
+            var search_data_cnfjob = (from n in db.CnfJobDbSet
+                where n.COMPID == compid && n.JOBTP == jobtype &&
+                      n.BILLFDT == Model.ACnfJob.BILLFDT && n.REGID == regid && n.PARTYID == partyid
+                select n).ToList();
+            Int64 i = 0;
+            decimal Shipping = 0, grandshipping = 0, Labor = 0, grandlabor = 0, Short = 0, grandshort = 0, Transport = 0, grandtransport = 0, Hanger = 0, grandhanger = 0,
+                Receiptable = 0, grandrecip = 0, Other = 0, grandother = 0, Demur = 0, granddemur = 0, Docs = 0, granddocs = 0, EP = 0, grandep = 0,
+                ITC_Paid = 0, granditcpaid = 0, ITC_as_per = 0, granditcasper = 0, ITC_to_be = 0, granditctobe = 0, Total = 0, grandtotal = 0,
+                grandcomm = 0, grandcnfusd = 0, misccostridt = 0, importduty = 0, pcdemurrage = 0, grandmisccostridt = 0, grandimportduty = 0, grandpcdemurrage = 0;
+            Int64 flag = 0;
+
+        }
+        @foreach (var ss in search_data_cnfjob)
+        {
+            var search_jobdetails1 = (from n in db.CnfJobDetailDbSet
+                where n.COMPID == ss.COMPID && n.JOBNO == ss.JOBNO && n.JOBYY == ss.JOBYY && n.JOBTP == ss.JOBTP
+                select n).ToList();
+            string billref = "", billrange = "";
+            foreach (var s in search_jobdetails1)
+            {
+                billref = s.BILLREF;
+                billrange = s.BILLRANGE;
+                <tr style="outline: thin solid">
+                    <td colspan="14" style="padding: 4px; font-weight: bold">Bill Ref. : <span style="font-weight: bold">@billref</span></td>
+
+                    <td colspan="15" align="left" style="font-weight: bold">Bill Range : <span style="font-weight: bold">@billrange</span> </td>
+
+
+
+                </tr>
+                flag = 1;
+                break;
+            }
+            if (flag == 1)
+            {
+                break;
+            }
+
+        }
+
+        <tr style="background-color: white; outline: thin solid; font-size: small">
+
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">SL</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">IP/EP</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">Job No</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">Bill Date</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">Buyer Name</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">Invoice</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">Bill of Entry No</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">Bill of Entry Date</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">Qty</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">Coverd Van No</td>
+
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">Shipping Bill Bank Payment</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">Labor Charges</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">Short Shipment Charges</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">Transport Charges</td>
+
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">Hanger Misc Charges</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">Receiptable Charges</td>
+
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">Port/Container Demurrage</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">Import Duty</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">Misc Cost for reducing Imp duty and tax</td>
+
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">Other Charges</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">Demur Charges</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">Docs Process Cost</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">C&F Comm</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">EP Value</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">ITC Paid To Customs</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">Final Invoice Value</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">ITC as per Final Invoice Value</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">ITC to be Paid By Employer</td>
+            <td colspan="1" style="color: black; border-right: thin solid;text-align: center">Total Amount</td>
+
+
+
+        </tr>
+
+        @foreach (var ss in search_data_cnfjob)
+        {
+            i++;
+            var search_jobdetails = (from n in db.CnfJobDetailDbSet
+                where n.COMPID == ss.COMPID && n.JOBNO == ss.JOBNO && n.JOBYY == ss.JOBYY && n.JOBTP == ss.JOBTP
+                select n).ToList();
+            var search_billpdt = (from n in db.CnfJobbillsDbSet
+                where n.COMPID == ss.COMPID && n.JOBNO == ss.JOBNO && n.JOBYY == ss.JOBYY && n.JOBTP == ss.JOBTP
+                select n).ToList();
+
+            foreach (var ssTeam in search_jobdetails)
+            {
+                Shipping = Convert.ToDecimal(ssTeam.SBANKPAY);
+
+                Labor = Convert.ToDecimal(ssTeam.LABORCHG);
+                Short = Convert.ToDecimal(ssTeam.SSHIPCHG);
+                Transport = Convert.ToDecimal(ssTeam.TRANSCHG);
+                Hanger = Convert.ToDecimal(ssTeam.HMISCCHG);
+                Receiptable = Convert.ToDecimal(ssTeam.RECPTCHG);
+                Other = Convert.ToDecimal(ssTeam.OTHERCHG);
+
+                Demur = Convert.ToDecimal(ssTeam.DEMURCHG);
+                Docs = Convert.ToDecimal(ssTeam.DOCPCOST);
+                EP = Convert.ToDecimal(ssTeam.EPVALUE);
+                ITC_Paid = Convert.ToDecimal(ssTeam.ITCPCUST);
+                ITC_as_per = Convert.ToDecimal(ssTeam.ITCFINVV);
+                ITC_to_be = Convert.ToDecimal(ssTeam.ITCPEMP);
+
+                misccostridt = (ssTeam.MISCCOSTRIDT) ?? 0;
+                importduty = (ssTeam.IMPORTDUTY) ?? 0;
+                pcdemurrage = (ssTeam.PCDEMURRAGE) ?? 0;
+
+            }
+            Total = Labor + Short + Transport + Hanger + Receiptable + misccostridt + importduty + pcdemurrage + Other + Demur + Docs + Convert.ToDecimal(ss.COMMAMT);
+            string billdate = "";
+            foreach (var ssteam in search_billpdt)
+            {
+                DateTime billdt = Convert.ToDateTime(ssteam.BILLPDT);
+                string bdt = billdt.ToString("dd-MMM-yy");
+                billdate = bdt;
+            }
+            string remarks = "";
+            if (ss.REMARKS != "" && ss.REMARKS != null)
+            {
+                if (ss.REMARKS.Length >= 30)
+                {
+                    remarks = ss.REMARKS.Substring(0, 30);
+                }
+                else
+                {
+                    remarks = ss.REMARKS;
+                }
+            }
+            else
+            {
+                remarks = "";
+            }
+
+            Int64 jobno = Convert.ToInt64(ss.JOBNO);
+
+
+            <tr style="outline: thin solid; font-size: small">
+
+                <td colspan="1" style="border-right: thin solid;text-align: left">
+                    @i
+                </td>
+                <td colspan="1" style="border-right: thin solid;text-align: left">
+                    @ss.PERMITNO
+                </td>
+                <td colspan="1" style="border-right: thin solid;text-align: left">
+                    @jobno
+                </td>
+                <td colspan="1" align="left" style="border-right: thin solid">
+                    @billdate
+                </td>
+                <td colspan="1" style="border-right: thin solid;text-align: left">
+                    @Html.DisplayFor(modelItem => ss.SUPPLIERNM)
+                </td>
+                <td colspan="1" style="border-right: thin solid;text-align: left">
+                    @Html.DisplayFor(modelItem => ss.DOCINVNO)
+                </td>
+                <td colspan="1" style="border-right: thin solid;text-align: right">
+                    @Html.DisplayFor(modelItem => ss.BENO)
+                </td>
+                <td colspan="1" style="border-right: thin solid;text-align: left">
+                    @Html.DisplayFor(modelItem => ss.BEDT)
+                </td>
+
+                <td colspan="1" style="border-right: thin solid;text-align: right">
+                    @Html.DisplayFor(modelItem => ss.PKGS)
+                </td>
+                <td colspan="1" style="border-right: thin solid;text-align: left">
+                    @Html.DisplayFor(modelItem => ss.FLIGHTNO)
+                </td>
+                <td colspan="1" style="border-right: thin solid;text-align: right">
+                    @Shipping
+                </td>
+                <td colspan="1" style="border-right: thin solid;text-align: right">
+                    @Labor
+                </td>
+                <td colspan="1" style="border-right: thin solid;text-align: right">
+                    @Short
+                </td>
+                <td colspan="1" style="border-right: thin solid;text-align: right">
+                    @Transport
+                </td>
+                <td colspan="1" style="border-right: thin solid;text-align: right">
+                    @Hanger
+                </td>
+
+                <td colspan="1" style="border-right: thin solid;text-align: right">
+                    @Receiptable
+                </td>
+                <td colspan="1" style="border-right: thin solid;text-align: right">
+                    @pcdemurrage
+                </td>
+                <td colspan="1"style="border-right: thin solid;text-align: right">
+                    @importduty
+                </td>
+                <td colspan="1" style="border-right: thin solid;text-align: right">
+                    @misccostridt
+                </td>
+
+                <td colspan="1" style="border-right: thin solid;text-align: right">
+                    @Other
+                </td>
+                <td colspan="1"style="border-right: thin solid;text-align: right">
+                    @Demur
+                </td>
+                <td colspan="1" style="border-right: thin solid;text-align: right">
+                    @Docs
+                </td>
+
+                <td colspan="1" style="border-right: thin solid;text-align: right">
+                    @Html.DisplayFor(modelItem => ss.COMMAMT)
+                </td>
+                <td colspan="1" style="border-right: thin solid;text-align: right">
+                    @EP
+                </td>
+
+                <td colspan="1" style="border-right: thin solid;text-align: right">
+                    @ITC_Paid
+                </td>
+                <td colspan="1" style="border-right: thin solid;text-align: right">
+                    @Html.DisplayFor(modelItem => ss.CNFV_USD)
+                </td>
+                <td colspan="1" style="border-right: thin solid;text-align: right">
+
+                    @ITC_as_per
+                </td>
+                <td colspan="1" style="border-right: thin solid;text-align: right">
+                    @ITC_to_be
+                </td>
+                <td colspan="1" style="border-right: thin solid;text-align: right">
+                    @Total
+                </td>
+            </tr>
+
+            grandshipping = grandshipping + Shipping;
+            granddemur = granddemur + Demur;
+            granddocs = granddocs + Docs;
+            grandep = grandep + EP;
+            grandhanger = grandhanger + Hanger;
+            granditcasper = granditcasper + ITC_as_per;
+            granditcpaid = granditcpaid + ITC_Paid;
+            granditctobe = granditctobe + ITC_to_be;
+            grandlabor = grandlabor + Labor;
+            grandother = grandother + Other;
+            grandrecip = grandrecip + Receiptable;
+
+            grandpcdemurrage = grandpcdemurrage + pcdemurrage;
+            grandimportduty = grandimportduty + importduty;
+            grandmisccostridt = grandmisccostridt + misccostridt;
+
+            grandshort = grandshort + Short;
+            grandtotal = grandtotal + Total;
+            grandtransport = grandtransport + Transport;
+            grandcomm = Convert.ToDecimal(grandcomm + ss.COMMAMT);
+            grandcnfusd = Convert.ToDecimal(grandcnfusd + ss.CNFV_USD);
+
+
+            Shipping = 0;
+            Demur = 0;
+            Docs = 0;
+            EP = 0;
+            Hanger = 0;
+            ITC_as_per = 0;
+            ITC_Paid = 0;
+            ITC_to_be = 0;
+            Labor = 0;
+            Other = 0;
+            Receiptable = 0;
+            Short = 0;
+            Transport = 0;
+            Total = 0;
+            misccostridt = 0;
+            importduty = 0;
+            pcdemurrage = 0;
+
+
+        }
+        <tr style="outline: thin solid; font-size: smaller">
+            <td colspan="10" align="right" style="border-right: thin solid">Grand Total :</td>
+            <td colspan="1" align="right" style="border-right: thin solid">@grandshipping</td>
+            <td colspan="1" align="right" style="border-right: thin solid">@grandlabor</td>
+            <td colspan="1" align="right" style="border-right: thin solid">@grandshort</td>
+            <td colspan="1" align="right" style="border-right: thin solid">@grandtransport</td>
+            <td colspan="1" align="right" style="border-right: thin solid">@grandhanger</td>
+            <td colspan="1" align="right" style="border-right: thin solid">@grandrecip</td>
+
+
+            <td colspan="1" align="right" style="border-right: thin solid">@grandpcdemurrage</td>
+            <td colspan="1" align="right" style="border-right: thin solid">@grandimportduty</td>
+            <td colspan="1" align="right" style="border-right: thin solid">@grandmisccostridt</td>
+
+            <td colspan="1" align="right" style="border-right: thin solid">@grandother</td>
+            <td colspan="1" align="right" style="border-right: thin solid">@granddemur</td>
+            <td colspan="1" align="right" style="border-right: thin solid">@granddocs</td>
+            <td colspan="1" align="right" style="border-right: thin solid">@grandcomm</td>
+            <td colspan="1" align="right" style="border-right: thin solid">@grandep</td>
+            <td colspan="1" align="right" style="border-right: thin solid">@granditcpaid</td>
+            <td colspan="1" align="right" style="border-right: thin solid">@grandcnfusd</td>
+            <td colspan="1" align="right" style="border-right: thin solid">@granditcasper</td>
+            <td colspan="1" align="right" style="border-right: thin solid">@granditctobe</td>
+            <td colspan="1" align="right" style="border-right: thin solid">@grandtotal</td>
+        </tr>
+        <tr></tr>
+        <tr></tr>
+        <tr></tr>
+        <tr></tr>
+        <tr></tr>
+        @{
+            string gtotal = Convert.ToString(grandtotal);
+            string totalspell = SpellAmount.MoneyConvFn(gtotal);
+        }
+        <tr>
+            <td colspan="4">In Words:</td>
+            <td colspan="25">@totalspell</td>
+        </tr>
+        <tr></tr>
+        <tr></tr>
+        <tr></tr>
+        <tr></tr>
+        <tr></tr>
+        <tr>
+            <td colspan="29">With best regards</td>
+
+        </tr>
+        <tr>
+            <td colspan="29">STANDARD FREIGHT INCORPORATION</td>
+
+        </tr>
+        @for (int a = 0; a < 15; a++)
+        {
+            <tr>
+                <td colspan="29"></td>
+            </tr>
+        }
+        <tr>
+            <td colspan="2"></td>
+            <td colspan="7">__________________________</td>
+            <td colspan="20"></td>
+
+        </tr>
+        <tr>
+            <td colspan="3"></td>
+            <td colspan="5">Authorized Signature</td>
+            <td colspan="21"></td>
+
+        </tr>
+        </tbody>
+
+
+        </table>
+    </div>
+</body>
+</html>

@@ -1,0 +1,761 @@
+﻿@using System.Activities.Expressions
+@using System.Text.RegularExpressions
+@using DotNetOpenAuth.AspNet.Clients
+@using Microsoft.SqlServer.Server
+@using Mvc_CNFApp.DataAccess
+@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.CNF_JOBBILL
+
+@{
+    Layout = null;
+    var LoggedCompId = Model.COMPID;
+    Int64 compid = Convert.ToInt64(LoggedCompId);
+
+    string companyName = "", address = "", contactNo = "", emailid = "";
+    CnfDbContext db = new CnfDbContext();
+    var SelectCompanyName = from n in db.AslCompanyDbSet where n.COMPID == compid select new { n.COMPNM, n.ADDRESS, n.CONTACTNO, n.EMAILID };
+
+    foreach (var n in SelectCompanyName)
+    {
+        companyName = n.COMPNM;
+        address = n.ADDRESS;
+        contactNo = n.CONTACTNO;
+        emailid = n.EMAILID;
+    }
+    var compNm = companyName;
+    var Address = address;
+    var contactno = contactNo;
+    var email = emailid;
+    DateTime billdt = Convert.ToDateTime(Model.BILLPDT);
+
+    var party_address = (from n in db.CnfPartyDbSet where n.COMPID == Model.COMPID && n.PARTYNM == Model.PARTYNM select n).ToList();
+    string Partyaddress = "";
+    foreach (var cnfParty in party_address)
+    {
+        Partyaddress = cnfParty.ADDRESS;
+    }
+
+    TimeZoneInfo timeZoneInfo;
+    timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Central Asia Standard Time");
+    DateTime currentDateTime = TimeZoneInfo.ConvertTime(DateTime.Now, timeZoneInfo);
+
+    Decimal balanceAmount = 0, newbalance = 0;
+    String Amount = "", InWords = "";
+    Decimal AdvanceAmount = 0, NormalAmount = 0, DiscountAmount = 0;
+
+}
+
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <link href="~/Content/reportcss/style.css" rel="stylesheet" />
+    @*
+        <script type="text/javascript">
+                    function ClosePrint() {
+                        var print = document.getElementById("print");
+                        print.style.visibility = "hidden";
+                        //            print.display = false;
+
+                        window.print();
+                    }
+        </script>*@
+
+</head>
+<body style=" background-color:#fafafa;">
+
+    <div style="width: 960px;height:1150px; margin: 0px auto; border: 1px solid #d3d3d3; border-radius: 5px; box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); background: none repeat scroll 0 0 white;">
+
+        <table id="mainTable" border="0" width="100%">
+            <thead>
+                <tr>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="10%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+
+                </tr>
+
+
+                <tr style="height: 192px">
+
+                    <td colspan="2">
+                        @*<img src="~/Content/AdminPanel/images/FSIC.JPG" width="100" height="70" alt="" />*@
+                    </td>
+
+
+                    <td colspan="10">
+                        <h3 style="color: white;padding:4px"></h3>
+                        <p style="color:white;padding-left:4px"></p>
+                    </td>
+
+                    <td colspan="6" style="color: white;padding:8px" align="right">
+                        @*Powered By<br />Alchemy Software*@
+                    </td>
+
+                </tr>
+
+
+                <tr>
+                    <td colspan="12" align="left" style="padding: 4px; font-weight: bold">BILL</td>
+                    <td align="right" colspan="6" style="padding:8px"></td>
+                </tr>
+                @{
+                    var Bill_jobNO = Model.JOBNO;
+                    var Bill_jobType = Model.JOBTP;
+                    var Bill_jobYear = Model.JOBYY;
+                    var Bill_PartyName = Model.PARTYNM;
+
+                    var SearchJOBCDT = from m in db.CnfJobDbSet
+                                       where m.COMPID == compid && m.JOBNO == Bill_jobNO && m.JOBYY == Bill_jobYear
+                                       && m.JOBTP == Bill_jobType
+                                       select new
+                                       {
+                                           m.JOBCDT,
+                                           m.BILLNOM,
+                                           m.FLIGHTNO,
+                                           m.BLNO,
+                                           m.BLDT,
+                                           m.BEDT,
+                                           m.BENO,
+                                           m.CONSIGNEENM,
+                                           m.CONSIGNEEADD,
+                                           m.SUPPLIERNM,
+                                           m.LCNO,
+                                           m.LCDT,
+                                           m.DOCINVNO,
+                                           m.DOCINVDT,
+                                           m.DELIVERYDT,
+                                           m.ARRIVEDT,
+                                           m.GOODS,
+                                           m.PKGS,
+                                           m.CNFV_USD,
+                                           m.CNFV_ERT,
+                                           m.ASSV_BDT,
+                                           m.COMMAMT,
+                                           m.PERMITNO,
+                                           m.PERMITDT,
+                                           m.WTGROSS,
+                                           m.CBM,
+                                           m.EXPNO,
+                                           m.EXPDT,
+                                           m.PARTSHIPMENT
+                                       };
+
+                    string jobCDTdate = "", BlNO = "", BillNO = "", billDate = "", bedate = "", beno = "", permitdate = "", CONSIGNEENM = "", CONSIGNEEADD = "", ARRIVEDT = "", DELIVERTDT = "", SUPPLIERNM = "",
+                        LCNO = "", LCDT = "", DOCINVNO = "", DOCINVDT = "", GOODS = "", PKGS = "", FlightNo = "", PermitNO = "", Wtgross = "", expno = "", expdt = "", partshipment = "";
+                    decimal CNFV_USD = 0, CNFV_ERT = 0, ASSV_BDT = 0, commission = 0, cbm = 0;
+                    foreach (var a in SearchJOBCDT)
+                    {
+                        if (a.JOBCDT != null)
+                        {
+                            string x1 = a.JOBCDT.ToString();
+                            DateTime datefrom1 = DateTime.Parse(x1);
+                            jobCDTdate = datefrom1.ToString("dd-MMM-yyyy");
+                        }
+                        BillNO = a.BILLNOM;
+                        if (billdt != null)
+                        {
+                            string x2 = billdt.ToString();
+                            DateTime datefrom2 = DateTime.Parse(x2);
+                            billDate = datefrom2.ToString("dd-MMM-yyyy");
+
+                        }
+                        if (a.PERMITDT != null)
+                        {
+                            string x2 = a.PERMITDT.ToString();
+                            DateTime datefrom2 = DateTime.Parse(x2);
+                            permitdate = datefrom2.ToString("dd-MMM-yyyy");
+                        }
+
+                        CONSIGNEENM = a.CONSIGNEENM;
+                        CONSIGNEEADD = a.CONSIGNEEADD;
+                        SUPPLIERNM = a.SUPPLIERNM;
+                        LCNO = a.LCNO;
+                        if (a.LCDT != null)
+                        {
+                            string x3 = a.LCDT.ToString();
+                            DateTime datefrom3 = DateTime.Parse(x3);
+                            LCDT = datefrom3.ToString("dd-MMM-yyyy");
+
+                        }
+                        DOCINVNO = a.DOCINVNO;
+                        if (a.DOCINVDT != null)
+                        {
+                            string x4 = a.DOCINVDT.ToString();
+                            DateTime datefrom4 = DateTime.Parse(x4);
+                            DOCINVDT = datefrom4.ToString("dd-MMM-yyyy");
+                        }
+                        if (a.BEDT != null)
+                        {
+                            string x4 = a.BEDT.ToString();
+                            DateTime datefrom4 = DateTime.Parse(x4);
+                            bedate = datefrom4.ToString("dd-MMM-yyyy");
+                        }
+                        beno = a.BENO;
+                        cbm = Convert.ToDecimal(a.CBM);
+                        GOODS = a.GOODS;
+                        PKGS = a.PKGS;
+                        BlNO = a.BLNO;
+                        CNFV_USD = Convert.ToDecimal(a.CNFV_USD);
+                        CNFV_ERT = Convert.ToDecimal(a.CNFV_ERT);
+                        ASSV_BDT = Convert.ToDecimal(a.ASSV_BDT);
+                        commission = Convert.ToDecimal(a.COMMAMT);
+                        FlightNo = a.FLIGHTNO;
+                        if (a.ARRIVEDT != null)
+                        {
+                            string x5 = a.ARRIVEDT.ToString();
+                            DateTime datefrom5 = DateTime.Parse(x5);
+                            ARRIVEDT = datefrom5.ToString("dd-MMM-yyyy");
+                        }
+                        if (a.DELIVERYDT != null)
+                        {
+                            string x6 = a.DELIVERYDT.ToString();
+                            DateTime datefrom6 = DateTime.Parse(x6);
+                            DELIVERTDT = datefrom6.ToString("dd-MMM-yyyy");
+
+                        }
+                        PermitNO = a.PERMITNO;
+                        Wtgross = Convert.ToString(a.WTGROSS);
+
+                        if (a.EXPDT != null)
+                        {
+                            string x6 = a.EXPDT.ToString();
+                            DateTime datefrom6 = DateTime.Parse(x6);
+                            expdt = datefrom6.ToString("dd-MMM-yyyy");
+                        }
+                        expno = a.EXPNO;
+                        partshipment = a.PARTSHIPMENT;
+                    }
+                }
+                <tr style="outline: thin solid">
+                    <td colspan="9" style="padding:4px;font-weight:bold">Job No : <span style="font-weight: bold">@Bill_jobNO | @Bill_jobYear | @Bill_jobType | @Bill_PartyName</span></td>
+                    <td colspan="9" style="font-weight: bold" align="right"> Date : <span style="font-weight:bold">@jobCDTdate</span></td>
+                </tr>
+                <tr style="outline: thin solid">
+                    <td colspan="3" style="padding:4px">Party Address </td>
+                    <td colspan="7">: @Partyaddress</td>
+                </tr>
+                <tr>
+                    <td colspan="3" style="padding:4px">Bill No </td>
+                    <td colspan="3">: @BillNO</td>
+                    <td colspan="6">Date : <span>@billDate</span></td>
+                    <td colspan="3"> B/L No</td>
+                    <td colspan="3"> :@BlNO</td>
+
+                </tr>
+                <tr>
+                    <td colspan="3" style="padding:4px">Account </td>
+                    <td colspan="9">: @CONSIGNEENM</td>
+                    <td colspan="3"> Permit No</td>
+                    <td colspan="3"> :@PermitNO</td>
+
+                </tr>
+                <tr>
+                    <td colspan="3" style="padding:4px">Bill of Entry No </td>
+                    <td colspan="3">: @beno</td>
+                    <td colspan="6">  Date :<span>@bedate</span></td>
+                    <td colspan="3"> Permit Date</td>
+                    <td colspan="3"> :@permitdate</td>
+
+                </tr>
+                <tr>
+                    <td colspan="3" style="padding:4px">Consignee Info </td>
+                    <td colspan="9">: @CONSIGNEEADD</td>
+                    <td colspan="3">Gross Weight</td>
+                    <td colspan="3"> :@Wtgross</td>
+                </tr>
+                <tr>
+                    <td colspan="3" style="padding:4px">Supplier Name</td>
+                    <td colspan="9">: @SUPPLIERNM</td>
+                    <td colspan="3">CBM</td>
+                    <td colspan="3"> :@cbm</td>
+                </tr>
+                <tr>
+                    <td colspan="3" style="padding:4px">L/C No </td>
+                    <td colspan="3">: @LCNO</td>
+                    <td colspan="6">Date : <span>@LCDT</span></td>
+                    <td colspan="3" style="padding:4px">Doc. Receive Date</td>
+                    <td colspan="3">: @DOCINVDT</td>
+
+
+                </tr>
+                <tr>
+                    <td colspan="3" style="padding:4px">Invoice No </td>
+                    <td colspan="3">: @DOCINVNO</td>
+                    <td colspan="6"></td>
+                    <td colspan="3" style="padding:4px">Arrival Date</td>
+                    <td colspan="3">: @ARRIVEDT</td>
+
+                </tr>
+                <tr>
+                    <td colspan="3" style="padding:4px">Goods</td>
+                    <td colspan="3">: @GOODS</td>
+                    <td colspan="6"></td>
+                    <td colspan="3" style="padding:4px">Delivery Date</td>
+                    <td colspan="3"> : @DELIVERTDT</td>
+
+                </tr>
+                <tr>
+                    <td colspan="3" style="padding:4px">Packages</td>
+                    <td colspan="3">: @PKGS</td>
+                    <td colspan="6">PartShipment: <span>@partshipment</span></td>
+                    <td colspan="3" style="padding:4px">Flight No </td>
+                    <td colspan="3"> : @FlightNo</td>
+
+
+                </tr>
+                <tr>
+                    <td colspan="3" style="padding:4px">Exp No</td>
+                    <td colspan="3">: @expno</td>
+                    <td colspan="6">Exp Date: <span>@expdt</span></td>
+                    <td colspan="3" style="padding:4px"></td>
+                    <td colspan="3"></td>
+
+
+                </tr>
+
+                <tr>
+                    <td colspan="3" style="padding:4px">Value USD </td>
+                    <td colspan="3">: @CNFV_USD</td>
+                    <td colspan="6">Exc. Rate : <span>@CNFV_ERT</span></td>
+                    <td colspan="6">Value TK. : <span>@ASSV_BDT</span></td>
+                </tr>
+
+
+                <tr style="background-color: #00689b; outline: thin solid">
+                    <td colspan="1" style="color: white; padding: 4px" align="center">SL</td>
+                    <td colspan="13" style="color: white; padding: 4px" align="center">
+                        <strong>PARTICULARS</strong>
+                    </td>
+                    <td colspan="4" style="color: white; padding: 4px" align="center">
+                        <strong>AMOUNT</strong>
+                    </td>
+                </tr>
+            </thead>
+
+            <tbody>
+                @{
+                    var getList = (from n in db.CnfJobbillsDbSet
+                                   where n.COMPID == compid && n.JOBNO == Bill_jobNO && n.JOBYY == Bill_jobYear
+                                         && n.JOBTP == Bill_jobType
+                                   orderby n.BILLSL
+                                   select n).ToList();
+
+                    var SumAdvanceAmount = (from m in db.CnfJobrcvs
+                                            where m.COMPID == compid && m.JOBNO == Bill_jobNO && m.JOBYY == Bill_jobYear
+                                                  && m.JOBTP == Bill_jobType && m.TRANSFOR == "ADVANCE"
+                                            group m by new { m.JOBNO, m.JOBTP, m.JOBYY, m.TRANSFOR }
+                                                into grp
+                                                select new { amount = grp.Sum(x => x.AMOUNT) }).ToList();
+
+                    foreach (var xxx in SumAdvanceAmount)
+                    {
+                        AdvanceAmount = Convert.ToDecimal(xxx.amount);
+                    }
+
+
+                    var SumNormalAmount = (from m in db.CnfJobrcvs
+                                           where m.COMPID == compid && m.JOBNO == Bill_jobNO && m.JOBYY == Bill_jobYear
+                                                 && m.JOBTP == Bill_jobType && m.TRANSFOR == "NORMAL"
+                                           group m by new { m.JOBNO, m.JOBTP, m.JOBYY, m.TRANSFOR }
+                                               into grp
+                                               select new { amount = grp.Sum(x => x.AMOUNT) }).ToList();
+
+                    foreach (var xxx in SumNormalAmount)
+                    {
+                        NormalAmount = Convert.ToDecimal(xxx.amount);
+                    }
+
+                    var SumDiscountAmount = (from m in db.CnfJobrcvs
+                                             where m.COMPID == compid && m.JOBNO == Bill_jobNO && m.JOBYY == Bill_jobYear
+                                                   && m.JOBTP == Bill_jobType && m.TRANSFOR == "DISCOUNT"
+                                             group m by new { m.JOBNO, m.JOBTP, m.JOBYY, m.TRANSFOR }
+                                                 into grp
+                                                 select new { amount = grp.Sum(x => x.AMOUNT) }).ToList();
+
+                    foreach (var xxx in SumDiscountAmount)
+                    {
+                        DiscountAmount = Convert.ToDecimal(xxx.amount);
+                    }
+
+
+                    string assvBDT = CommainAmount.AmountwithComma(Convert.ToString(@ASSV_BDT));
+
+
+                }
+                @if (getList.Count != 0)
+                {
+
+
+                    Decimal totalAmount = 0;
+
+                    foreach (var item in getList)
+                    {
+
+                        <tr style="outline:thin solid">
+                            <td colspan="1" align="center">
+                                @Html.DisplayFor(modelItem => item.BILLSL)
+                            </td>
+                            <td colspan="13" align="left" style="font-size:small">
+                                @Html.DisplayFor(modelItem => item.EXPNM)-@Html.DisplayFor(modelItem => item.REMARKS)
+                            </td>
+                            @{
+                        Int64 ccheck = 0;
+                        string billamount = "";
+                            }
+
+                            @if (item.BILLAMT < 0)
+                            {
+                                item.BILLAMT = item.BILLAMT * (-1);
+                                ccheck = 1;
+                                string convertbillamount = Convert.ToString(item.BILLAMT);
+
+                                billamount = CommainAmount.AmountwithComma(convertbillamount);
+
+                            }
+                            else
+                            {
+                                ccheck = 0;
+                                string convertbillamount = Convert.ToString(item.BILLAMT);
+
+                                billamount = CommainAmount.AmountwithComma(convertbillamount);
+                            }
+                            @if (ccheck == 1)
+                            {
+                                <td colspan="4" align="right">
+                                    -@billamount
+                                </td>
+                            }
+                            else
+                            {
+                                <td colspan="4" align="right">
+                                    @billamount
+                                </td>
+                            }
+
+
+                        </tr>
+                            totalAmount = totalAmount + Convert.ToDecimal(item.BILLAMT);
+
+                    }
+
+
+                    <tr style="outline:thin solid">
+
+                        <td colspan="9" align="right"> Assessable value: @assvBDT          </td>
+                        @{
+                    string com = CommainAmount.AmountwithComma(Convert.ToString(@commission));
+                        }
+                        <td colspan="9" align="right">
+                            Agency Commission(TK.) : <span>@com</span>
+                        </td>
+                    </tr>
+
+
+                    totalAmount = totalAmount + Convert.ToDecimal(commission);
+
+                    <tr>
+                        <td colspan="14" align="right" style="font-weight:bold">Total(TK.):</td>
+                        @{
+                    string totalamount = "";
+                    Int64 check = 0;
+                    decimal tt = 0;
+                    if (@totalAmount < 0)
+                    {
+                        tt = totalAmount * (-1);
+                        totalamount = CommainAmount.AmountwithComma(Convert.ToString(@tt));
+                        check = 1;
+                    }
+                    else
+                    {
+                        totalamount = CommainAmount.AmountwithComma(Convert.ToString(@totalAmount));
+                        check = 0;
+                    }
+
+                        }
+                        @if (check == 1)
+                        {
+                            <td colspan="4" align="right" style="font-weight: bold">
+                                -@totalamount
+                            </td>
+                        }
+                        else
+                        {
+                            <td colspan="4" align="right" style="font-weight: bold">
+                                @totalamount
+                            </td>
+                        }
+
+                    </tr>
+
+                    <tr>
+                        <td colspan="14" align="right">Advance Amount(TK.):</td>
+                        @{
+                        string advanceamount = "";
+                        Int64 checkadvance = 0;
+                        if (@AdvanceAmount < 0)
+                        {
+                            decimal newadvance = AdvanceAmount * (-1);
+                            advanceamount = CommainAmount.AmountwithComma(Convert.ToString(@newadvance));
+                            checkadvance = 1;
+                        }
+                        else
+                        {
+                            advanceamount = CommainAmount.AmountwithComma(Convert.ToString(@AdvanceAmount));
+                            checkadvance = 0;
+                            if (advanceamount == "")
+                            {
+                                advanceamount = "0";
+                            }
+                        }
+
+                        var search_adv = (from n in db.CnfJobrcvs
+                                          where n.COMPID == compid && n.JOBNO == Bill_jobNO && n.JOBYY == Bill_jobYear
+                                              && n.JOBTP == Bill_jobType && n.ADVSHOW == "Y"
+                                          select n).ToList().Count;
+
+                        }
+                        @if (search_adv > 0)
+                        {
+                            if (checkadvance == 1)
+                            {
+                                <td colspan="4" align="right">
+                                    -@advanceamount
+                                </td>
+                            }
+                            else
+                            {
+                                <td colspan="4" align="right">
+                                    @advanceamount
+                                </td>
+                            }
+                        }
+                        else
+                        {
+                             AdvanceAmount = 0;
+                             <td colspan="4" align="right">
+                                @AdvanceAmount
+                                </td>
+                        }
+
+                    </tr>
+
+                    <tr>
+                        <td colspan="14" align="right">Normal Amount(TK.):</td>
+                        @{
+                        string normalamount = "";
+                        Int64 checknormal = 0;
+                        if (NormalAmount < 0)
+                        {
+                            decimal newNormal = NormalAmount * (-1);
+                            normalamount = CommainAmount.AmountwithComma(Convert.ToString(@newNormal));
+                            checknormal = 1;
+                        }
+                        else
+                        {
+                            normalamount = CommainAmount.AmountwithComma(Convert.ToString(@NormalAmount));
+                            checknormal = 0;
+                            if (normalamount == "")
+                            {
+                                normalamount = "0";
+                            }
+                        }
+
+                        }
+                        @if (checknormal == 1)
+                        {
+                            <td colspan="4" align="right">
+                                -@normalamount
+                            </td>
+                        }
+                        else
+                        {
+                            <td colspan="4" align="right">
+                                @normalamount
+                            </td>
+                        }
+
+                    </tr>
+
+                    <tr>
+                        <td colspan="14" align="right">Discount Amount(TK.):</td>
+                        @{
+                        string discountamount = "";
+                        Int64 checkdiscount = 0;
+                        if (DiscountAmount < 0)
+                        {
+                            decimal newDiscount = DiscountAmount * (-1);
+                            discountamount = CommainAmount.AmountwithComma(Convert.ToString(@newDiscount));
+                            checkdiscount = 1;
+                        }
+                        else
+                        {
+                            discountamount = CommainAmount.AmountwithComma(Convert.ToString(@DiscountAmount));
+                            checkdiscount = 0;
+                            if (discountamount == "")
+                            {
+                                discountamount = "0";
+                            }
+                        }
+
+                        }
+                        @if (checkdiscount == 1)
+                        {
+                            <td colspan="4" align="right">
+                                -@discountamount
+                            </td>
+                        }
+                        else
+                        {
+                            <td colspan="4" align="right">
+                                @discountamount
+                            </td>
+                        }
+                        @*
+                            <td colspan="4" align="right">
+                                @DiscountAmount
+                            </td>*@
+                    </tr>
+
+                    balanceAmount = totalAmount - AdvanceAmount - NormalAmount - DiscountAmount;
+
+
+                    <tr>
+                        <td colspan="14" align="right" style="font-weight:bold">Balance Amount(TK.):</td>
+                        @{
+                    string balanceamount = "";
+                    Int64 checkbalance = 0;
+                    if (balanceAmount < 0)
+                    {
+                         newbalance = balanceAmount * (-1);
+                        balanceamount = CommainAmount.AmountwithComma(Convert.ToString(@newbalance));
+                        checkbalance = 1;
+                    }
+                    else
+                    {
+                        balanceamount = CommainAmount.AmountwithComma(Convert.ToString(@balanceAmount));
+                        newbalance = balanceAmount;
+                        checkbalance = 0;
+                        if (balanceamount == "")
+                        {
+                            balanceamount = "0";
+                        }
+                    }
+
+                        }
+                        @if (checkbalance == 1)
+                        {
+                            <td colspan="4" align="right" style="font-weight:bold">
+                                -@balanceamount
+                            </td>
+                        }
+                        else
+                        {
+                            <td colspan="4" align="right" style="font-weight:bold">
+                                @balanceamount
+                            </td>
+                        }
+                        @*
+                            <td colspan="4" align="right" style="font-weight:bold">
+                                @balanceAmount
+                            </td>*@
+                    </tr>
+
+
+                }
+                @{
+                    Amount = Convert.ToString(newbalance);
+                    InWords = SpellAmount.MoneyConvFn(Amount);
+                }
+
+
+                <tr>
+                    <td colspan="18">
+                        <strong>In words : </strong><span>@InWords</span>
+                    </td>
+
+                </tr>
+
+                <tr>
+                    <td colspan="18">
+                        Powered By<br />Alchemy Software
+                    </td>
+
+                </tr>
+
+
+
+                <tr>
+                    <td></td>
+                </tr>
+
+                <tr>
+                    <td colspan="18">Mode of Payment: All payments are to be made by Accounts paybale Cheques to CANDATEX BD</td>
+                </tr>
+                <tr>
+                    <td colspan="18">For: CANDATEX BD</td>
+                </tr>
+
+            </tbody>
+
+
+            <tfoot>
+
+                @for (int a = 0; a < 15; a++)
+                {
+                    <tr>
+                        <td colspan="6"></td>
+                    </tr>
+                }
+
+
+                <tr>
+
+                    <td colspan="6">____________________________</td>
+                    <td colspan="1"></td>
+                    <td colspan="5"></td>
+                    <td colspan="1"></td>
+                    <td colspan="5"></td>
+                </tr>
+                <tr>
+                    <td colspan="6"></td>
+                </tr>
+                <tr>
+                    <td colspan="6"></td>
+                </tr>
+                <tr>
+                    <td colspan="1"></td>
+                    <td colspan="5">MD.Nuruzzaman</td>
+                    <td colspan="2"></td>
+                    <td colspan="4"></td>
+                    <td colspan="2"></td>
+                    <td colspan="4"></td>
+                </tr>
+            </tfoot>
+
+
+
+        </table>
+
+
+
+
+    </div>
+
+</body>
+</html>

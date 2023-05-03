@@ -1,0 +1,309 @@
+﻿@using Mvc_CNFApp.DataAccess
+@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.PageModel
+          
+
+@{
+    Layout = null;
+    if (HttpContext.Current.Session["LoggedUserType"] == null)
+    {
+        Response.Redirect(Url.Action("Index", "Login"));
+    }
+
+    var LoggedUserTp = HttpContext.Current.Session["LoggedUserType"].ToString();
+    var LoggedUserStatus = HttpContext.Current.Session["LoggedUserStatus"].ToString();
+    var LoggedCompanyStatus = HttpContext.Current.Session["LoggedCompanyStatus"].ToString();
+
+    if ((LoggedUserTp == "CompanyAdmin" || LoggedUserTp == "UserAdmin" || LoggedUserTp == "User") && LoggedUserStatus == "A" && LoggedCompanyStatus == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Login"));
+    }
+
+    var LoggedCompId = HttpContext.Current.Session["loggedCompID"].ToString();
+    Int64 compid = Convert.ToInt64(LoggedCompId);
+
+
+    string companyName = "", address = "", contactNo = "";
+    CnfDbContext db = new CnfDbContext();
+    var SelectCompanyName = from n in db.AslCompanyDbSet
+
+                            where n.COMPID == compid
+                            select new { n.COMPNM, n.ADDRESS, n.CONTACTNO };
+
+    foreach (var n in SelectCompanyName)
+    {
+        companyName = n.COMPNM;
+        address = n.ADDRESS;
+        contactNo = n.CONTACTNO;
+    }
+    var compNm = companyName;
+    var Address = address;
+    var contactno = contactNo;
+
+    var jobNO = Model.ACnfJob.JOBNO;
+    var jobType = Model.ACnfJob.JOBTP;
+    var jobYear = Model.ACnfJob.JOBYY;
+    var Branch = Model.ACnfJob.REGID;
+    var PartyName = Model.AGL_acchart.ACCOUNTNM;
+
+
+
+    TimeZoneInfo timeZoneInfo;
+    timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Central Asia Standard Time");
+    DateTime currentDateTime = TimeZoneInfo.ConvertTime(DateTime.Now, timeZoneInfo);
+
+    Decimal GrandTotal = 0;
+    String InWords = "";
+    String grandAmount = "";
+}
+
+
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <link href="~/Content/reportcss/style.css" rel="stylesheet" />
+    @*<script type="text/javascript">
+            function ClosePrint() {
+                var print = document.getElementById("print");
+                print.style.visibility = "hidden";
+                //            print.display = false;
+
+                window.print();
+            }
+        </script>*@
+
+</head>
+<body style=" background-color:#fafafa;">
+
+    @*<input id="print" tabindex="1" type="button" value="Print" onclick="ClosePrint()" />*@
+    <div style="width: 960px; margin: 0px auto; border: 1px solid #d3d3d3; border-radius: 5px; box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); background: none repeat scroll 0 0 white;">
+        <table id="mainTable" border="0" width="100%">
+            <thead>
+                <tr>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="10%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+
+                </tr>
+                <tr style="background-color: #00689b">
+                    <td colspan="12">
+                        <h3 style="color: white;padding:4px">@compNm</h3>
+                        <p style="color:white;padding-left:4px">@Address<span>  @contactno</span></p>
+                    </td>
+
+                    <td colspan="6" style="color: white;padding:8px" align="right">
+                        Powered By<br />Alchemy Software
+                    </td>
+
+                </tr>
+
+                <tr>
+                    <td colspan="12" align="left" style="padding: 4px; font-weight: bold">Job Wise Receive</td>
+                    <td align="right" colspan="6" style="padding:8px">Print:@currentDateTime.ToString("dd-MM-yy hh:mm tt")</td>
+                </tr>
+                <tr style="outline: thin solid">
+                    <td colspan="3" style="padding:4px;font-weight:bold">Job No : <span style="font-weight: bold">@jobNO</span></td>
+
+                    <td colspan="3" align="left" style="font-weight:bold">Job Year : <span style="font-weight:bold">@jobYear</span> </td>
+                    <td colspan="4" style="font-weight: bold" align="left"> Job Type : <span style="font-weight:bold">@jobType</span></td>
+                    <td colspan="6"></td>
+
+                </tr>
+                <tr style="outline: thin solid">
+                    <td colspan="6" style="font-weight:bold;padding:4px">Party Name : <span style="font-weight:bold">@PartyName</span></td>
+
+                    <td colspan="6" style="font-weight:bold">Reg Id : <span style="font-weight:bold">@Branch</span> </td>
+                    <td colspan="6"></td>
+                </tr>
+
+                <tr style="background-color: #00689b; outline: thin solid">
+                    <td colspan="3" style="color: white; padding: 4px" align="left">Date</td>
+                    <td colspan="3" style="color: white; padding: 4px" align="center">Trans No</td>
+                    <td colspan="6" style="color: white; padding: 4px" align="center">Received To</td>
+                    <td colspan="3" style="color: white; padding: 4px" align="center">Remarks</td>
+                    <td colspan="3" style="color: white; padding: 4px" align="center">Amount</td>
+
+
+                </tr>
+            </thead>
+            <tbody>
+
+                @{
+                    var search_data_advance = (from n in db.CnfJobrcvs where n.COMPID == compid && n.JOBNO == jobNO && n.JOBYY == jobYear && n.JOBTP == jobType && n.TRANSFOR == "ADVANCE" select n).ToList();
+                    decimal subadvance = 0 ;
+                    decimal grandtotal = 0;
+                    }
+                @if (search_data_advance.Count != 0)
+                {
+                    <tr>
+                        <td colspan="18" style="font-weight:bold">ADVANCE</td>
+                    </tr>
+                }
+
+                @foreach (var ss in search_data_advance)
+                {
+                    string accountnm = "";
+                    var search_accountnm = (from n in db.GlAcchartDbSet where n.COMPID == compid && n.ACCOUNTCD == ss.DEBITCD select n).ToList();
+                    foreach (var ssteam in search_accountnm)
+                    {
+                        accountnm = ssteam.ACCOUNTNM;
+                    }
+
+                    string xx = Convert.ToString(ss.TRANSDT);
+                    DateTime tdate = DateTime.Parse(xx);
+                    string transdt = tdate.ToString("dd-MMM-yyyy");
+
+                    string convertamt = Convert.ToString(ss.AMOUNT);
+
+                    string amt =CommainAmount.AmountwithComma(convertamt);
+                    <tr>
+                        <td colspan="3">@transdt</td>
+                        <td colspan="3">@ss.TRANSNO</td>
+                        <td colspan="6">@accountnm</td>
+                        <td colspan="3">@ss.REMARKS</td>
+                        <td colspan="3" align="right">@amt</td>
+                    </tr>
+                    subadvance = subadvance + Convert.ToDecimal(ss.AMOUNT);
+                }
+                @if(search_data_advance.Count != 0)
+                {
+                    string convertamt = Convert.ToString(subadvance);
+
+                    string amt = CommainAmount.AmountwithComma(convertamt);
+                    <tr>
+                        <td colspan="15" align="right" style="font-weight:bold">Sub Total : </td>
+                        <td colspan="3" align="right" style="font-weight:bold">@amt</td>
+                    </tr>
+                    grandtotal = grandtotal + subadvance;
+                }
+
+                @{
+                    var search_data_normal = (from n in db.CnfJobrcvs where n.COMPID == compid && n.JOBNO == jobNO && n.JOBYY == jobYear && n.JOBTP == jobType && n.TRANSFOR == "NORMAL" select n).ToList();
+                    decimal subnormal = 0;
+                    }
+                @if (search_data_normal.Count != 0)
+                {
+                    <tr>
+                        <td colspan="18" style="font-weight:bold">NORMAL</td>
+                    </tr>
+                }
+
+                @foreach (var ss in search_data_normal)
+                {
+                    string accountnm = "";
+                    var search_accountnm = (from n in db.GlAcchartDbSet where n.COMPID == compid && n.ACCOUNTCD == ss.DEBITCD select n).ToList();
+                    foreach (var ssteam in search_accountnm)
+                    {
+                        accountnm = ssteam.ACCOUNTNM;
+                    }
+                    
+                    string xx = Convert.ToString(ss.TRANSDT);
+                    DateTime tdate = DateTime.Parse(xx);
+                    string transdt = tdate.ToString("dd-MMM-yyyy");
+                    
+                    string convertamt = Convert.ToString(ss.AMOUNT);
+
+                    string amt = CommainAmount.AmountwithComma(convertamt);
+                    <tr>
+                        <td colspan="3">@transdt</td>
+                        <td colspan="3">@ss.TRANSNO</td>
+                        <td colspan="6">@accountnm</td>
+                        <td colspan="3">@ss.REMARKS</td>
+                        <td colspan="3" align="right">@amt</td>
+                    </tr>
+                    subnormal = subnormal + Convert.ToDecimal(ss.AMOUNT);
+                }
+                @if (search_data_normal.Count != 0)
+                {
+                    string convertamt = Convert.ToString(subnormal);
+
+                    string amt = CommainAmount.AmountwithComma(convertamt);
+                    <tr>
+                        <td colspan="15" align="right" style="font-weight:bold">Sub Total : </td>
+                        <td colspan="3" align="right" style="font-weight:bold">@amt</td>
+                    </tr>
+                    grandtotal = grandtotal + subnormal;
+                }
+                @{
+                    var search_data_discount = (from n in db.CnfJobrcvs where n.COMPID == compid && n.JOBNO == jobNO && n.JOBYY == jobYear && n.JOBTP == jobType && n.TRANSFOR == "DISCOUNT" select n).ToList();
+                    decimal subdiscount = 0;
+                    }
+                @if (search_data_discount.Count != 0)
+                {
+                    <tr>
+                        <td colspan="18" style="font-weight:bold">DISCOUNT</td>
+                    </tr>
+                }
+
+                @foreach (var ss in search_data_discount)
+                {
+                    string accountnm = "";
+                    var search_accountnm = (from n in db.GlAcchartDbSet where n.COMPID == compid && n.ACCOUNTCD == ss.DEBITCD select n).ToList();
+                    foreach (var ssteam in search_accountnm)
+                    {
+                        accountnm = ssteam.ACCOUNTNM;
+                    }
+                     string xx = Convert.ToString(ss.TRANSDT);
+                    DateTime tdate = DateTime.Parse(xx);
+                    string transdt = tdate.ToString("dd-MMM-yyyy");
+
+                    string convertamt = Convert.ToString(ss.AMOUNT);
+
+                    string amt = CommainAmount.AmountwithComma(convertamt);
+                    <tr>
+                        <td colspan="3">@transdt</td>
+                        <td colspan="3">@ss.TRANSNO</td>
+                        <td colspan="6">@accountnm</td>
+                        <td colspan="3">@ss.REMARKS</td>
+                        <td colspan="3" align="right">@amt</td>
+                    </tr>
+                    subdiscount = subdiscount + Convert.ToDecimal(ss.AMOUNT);
+                }
+                @if (search_data_discount.Count != 0)
+                {
+                    string convertamt = Convert.ToString(subdiscount);
+
+                    string amt = CommainAmount.AmountwithComma(convertamt);
+                    <tr>
+                        <td colspan="15" align="right" style="font-weight:bold">Sub Total : </td>
+                        <td colspan="3" align="right" style="font-weight:bold">@amt</td>
+                    </tr>
+                    grandtotal = grandtotal + subdiscount;
+                }
+               @{
+                   string convertgrand = Convert.ToString(grandtotal);
+
+                   string grandAmt = CommainAmount.AmountwithComma(convertgrand);
+               } 
+                <tr>
+                    <td colspan="15" align="right" style="font-weight:bold">Grand Total : </td>
+                    <td colspan="3" align="right" style="font-weight:bold">@grandAmt</td>
+                </tr>
+
+
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>

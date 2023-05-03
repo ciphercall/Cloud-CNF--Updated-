@@ -1,0 +1,203 @@
+﻿@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.CNF_ExpenseHeadModel
+@{
+    ViewBag.Title = "GetExpensesList";
+    Layout = null;
+    if (HttpContext.Current.Session["LoggedUserType"] == null)
+    {
+        Response.Redirect(Url.Action("Index", "Login"));
+    }
+
+    var LoggedUserTp = HttpContext.Current.Session["LoggedUserType"].ToString();
+    var LoggedUserStatus = HttpContext.Current.Session["LoggedUserStatus"].ToString();
+    var LoggedCompanyStatus = HttpContext.Current.Session["LoggedCompanyStatus"].ToString();
+
+    if ((LoggedUserTp == "CompanyAdmin" || LoggedUserTp == "UserAdmin" || LoggedUserTp == "User") && LoggedUserStatus == "A" && LoggedCompanyStatus == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+
+    var LoggedCompId = HttpContext.Current.Session["loggedCompID"].ToString();
+    Int64 compid = Convert.ToInt64(LoggedCompId);
+
+    string companyName = "", address = "", contactNo = "";
+    CnfDbContext db = new CnfDbContext();
+    var SelectCompanyName = from n in db.AslCompanyDbSet
+
+                            where n.COMPID == compid
+                            select new { n.COMPNM, n.ADDRESS, n.CONTACTNO };
+
+    foreach (var n in SelectCompanyName)
+    {
+        companyName = n.COMPNM;
+        address = n.ADDRESS;
+        contactNo = n.CONTACTNO;
+    }
+    var compNm = companyName;
+    var Address = address;
+    var contactno = contactNo;
+    //var SelectData = from n in db.CnfExpmstDbSet
+    //                     join a in db.CnfExpenseDbSet on n.COMPID equals a.COMPID
+    //                     where n.COMPID == compid
+    //                     select new {n.EXPCNM,a.EXPNM };
+    //List<SelectListItem>expensesItem=new List<SelectListItem>();
+
+    var res = db.CnfExpenseDbSet.Join(db.CnfExpmstDbSet, e => e.COMPID, b => b.COMPID,
+                            (e, b) => new
+                            {
+                                EXPCNM = b.EXPCNM,
+                                EXPNM = e.EXPNM,
+                                COMPID = b.COMPID
+                            }).Where(eAndb => eAndb.COMPID == compid);
+
+    Int64 minHeadId = Convert.ToInt64((from n in db.CnfExpmstDbSet where compid == n.COMPID select n.EXPCID).Min());
+    Int64 maxHeadId = Convert.ToInt64((from n in db.CnfExpmstDbSet where compid == n.COMPID select n.EXPCID).Max());
+
+    TimeZoneInfo timeZoneInfo;
+    timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Central Asia Standard Time");
+    DateTime currentDateTime = TimeZoneInfo.ConvertTime(DateTime.Now, timeZoneInfo);
+
+    //permission check
+    Int64 loggedUserID = Convert.ToInt64(HttpContext.Current.Session["loggedUserID"].ToString());
+
+
+    var permission_Check = from m in db.AslRoleDbSet
+                           where m.COMPID == compid && m.USERID == loggedUserID
+                               && m.CONTROLLERNAME == "ListReport" && m.ACTIONNAME == "GetExpensesList"
+                           select m;
+    var Status = "";
+    foreach (var check in permission_Check)
+    {
+        Status = check.STATUS;
+    }
+
+    if (Status == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+}
+
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <link href="~/Content/reportcss/style.css" rel="stylesheet" />
+    @*<script type="text/javascript">
+            function ClosePrint() {
+                var print = document.getElementById("print");
+                print.style.visibility = "hidden";
+                //            print.display = false;
+
+                window.print();
+            }
+        </script>*@
+
+</head>
+<body style=" background-color:#fafafa;">
+    @*<input id="print" tabindex="1" type="button" value="Print" onclick="ClosePrint()" />*@
+    <div style="width: 960px; margin: 0px auto; border: 1px solid #d3d3d3; border-radius: 5px; box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); background: none repeat scroll 0 0 white;">
+        <table id="mainTable" border="0" width="100%">
+            <thead>
+                <tr>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="10%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+
+                </tr>
+                <tr style="background-color: #00689b">
+                    <td colspan="12">
+                        <h3 style="color: white;padding:4px">@compNm</h3>
+                        @*<p style="color:white;padding-left:4px">@Address<span>  @contactno</span></p>*@
+                    </td>
+
+                    <td colspan="6" style="color: white;padding:8px" align="right">
+                        Powered By<br />Alchemy Software
+                    </td>
+
+                </tr>
+
+                <tr>
+                    <td colspan="12" align="left" style="padding: 4px; font-weight: bold">List Of Expense Head</td>
+                    <td align="right" colspan="6" style="padding:8px">Print:@currentDateTime.ToString("dd-MM-yy hh:mm tt")</td>
+                </tr>
+
+
+
+            </thead>
+            <tbody>
+                @for (Int64 i = minHeadId; i <= maxHeadId; i++)
+                {
+
+                    string ExpenseHeadName = "";
+                    Int64 expcId = 0;
+
+                    var ExpenseHeadInfo = from n in db.CnfExpmstDbSet
+                                          where n.COMPID == compid && n.EXPCID == i
+                                          select new { ExpCName = n.EXPCNM, expcid = n.EXPCID };
+                    foreach (var n in ExpenseHeadInfo)
+                    {
+                        ExpenseHeadName = n.ExpCName;
+                        expcId = Convert.ToInt64(n.expcid);
+                    }
+                    var HeadName = ExpenseHeadName;
+                    var HeadID = expcId;
+
+
+                    List<CNF_EXPENSE> expenses = new List<CNF_EXPENSE>();
+                    expenses = db.CnfExpenseDbSet.Where(e => e.COMPID == compid && e.EXPCID == i).ToList();
+                    <tr>
+                        <td colspan="18" style="color: black;text-align:left">
+                            <strong>@HeadName</strong>
+                        </td>
+                    </tr>
+                    <tr style="background-color: #00689b; outline: thin solid">
+                        <td colspan="18" style="color: white;padding:4px" align="left">Head Particulars</td>
+
+                    </tr>
+                    foreach (var item in expenses)
+                    {
+                        <tr style="outline: thin solid">
+                            <td colspan="18" style="padding:4px" align="left">@Html.DisplayFor(modelItem => item.EXPNM)</td>
+
+                        </tr>
+
+                    }
+
+                }
+
+            </tbody>
+        </table>
+
+        </div>
+
+
+
+
+
+
+
+</body>
+</html>

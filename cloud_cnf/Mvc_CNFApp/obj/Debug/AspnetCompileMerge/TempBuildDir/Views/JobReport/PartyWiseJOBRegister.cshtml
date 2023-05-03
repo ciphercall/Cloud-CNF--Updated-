@@ -1,0 +1,171 @@
+﻿@using System.Net.Mime
+@using System.Web.UI.WebControls
+@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.CNF_JOB
+
+@{
+    ViewBag.Title = "PartyWiseJOBRegister";
+    if (HttpContext.Current.Session["LoggedUserType"] == null)
+    {
+        Response.Redirect(Url.Action("Index", "Login"));
+    }
+
+    var LoggedUserTp = HttpContext.Current.Session["LoggedUserType"].ToString();
+    var LoggedUserStatus = HttpContext.Current.Session["LoggedUserStatus"].ToString();
+    var LoggedCompanyStatus = HttpContext.Current.Session["LoggedCompanyStatus"].ToString();
+
+    if ((LoggedUserTp == "CompanyAdmin" || LoggedUserTp == "UserAdmin" || LoggedUserTp == "User") && LoggedUserStatus == "A" && LoggedCompanyStatus == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+
+    Int64 compid = Convert.ToInt64(System.Web.HttpContext.Current.Session["loggedCompID"]);
+    CnfDbContext db = new CnfDbContext();
+    
+    //Party Name: [ ] ,Party Nam Field loaded in DropdownList
+    List<SelectListItem> listPartyName = new List<SelectListItem>();
+    var result = (from n in db.GlAcchartDbSet
+                  where n.COMPID == compid
+                  select n).ToList();
+
+    foreach (var n in result)
+    {
+        string substring = Convert.ToString(n.ACCOUNTCD);
+        string subres = substring.Substring(3, 3);
+        if (subres == "103")
+        {
+            listPartyName.Add(new SelectListItem { Text = n.ACCOUNTNM, Value = n.ACCOUNTCD.ToString() });
+        }
+    }
+
+    //permission check
+
+    Int64 loggedUserID = Convert.ToInt64(HttpContext.Current.Session["loggedUserID"].ToString());
+
+
+    var permission_Check = from m in db.AslRoleDbSet
+                           where m.COMPID == compid && m.USERID == loggedUserID
+                               && m.CONTROLLERNAME == "JobReport" && m.ACTIONNAME == "PartyWiseJOBRegister"
+                           select m;
+    var Status = "";
+    foreach (var check in permission_Check)
+    {
+        Status = check.STATUS;
+    }
+
+    if (Status == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+    
+    
+    
+}
+<link href="~/Content/bootstrap_datepicker_css/datepicker.css" rel="stylesheet" />
+<link href="~/Content/bootstrap_datepicker_css/datepicker3.css" rel="stylesheet" />
+
+<script src="~/Scripts/bootstrap-datepicker.js"></script>
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    @Html.ValidationSummary(true)
+
+    @Html.HiddenFor(model => model.COMPID, new { id = "txtCompId", @Value = compid })
+    <div id="contentHeaderBox">
+        <h1 style="padding-left:16px">
+            Party Wise Job Register
+        </h1>
+    </div>
+    <br/>
+    
+    <div class="col-md-12">
+        <div class="form-group">
+            <div class="row">
+                <div class="col-md-3">
+                    @Html.Label("name", "Party Name: ", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-8">
+                    @Html.DropDownListFor(model => model.PARTYID, listPartyName, "-Select-", htmlAttributes: new { @class = "form-control",autofocus=true })
+                    @Html.ValidationMessageFor(model => model.PARTYID, "", new { @class = "text-danger" })
+                </div>
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-3">
+                    @Html.Label("name", "Job Year: ", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-2">
+                    @Html.TextBoxFor(model => model.JOBYY, htmlAttributes: new { @class = "form-control", id = "idyear" })
+                    @Html.ValidationMessageFor(model => model.JOBYY, "", new { @class = "text-danger" })
+                </div>
+                <div class="col-md-4"><br /></div>
+                <div class="col-md-2">
+                    <input type="submit" class="btn btn-primary btn-block" value="Print" name="command" formtarget="_blank" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+        @*<div class="container">
+            <div class="row">
+                <div class="col-md-2"></div>
+                <div class="col-md-8">
+                    <div class="panel panel-info" style="padding: 0px; margin-bottom: 0px;">
+                        <div class="panel-heading text-center">
+                            <h4>Party Wise Job Register</h4>
+                        </div>
+                    </div>
+
+                    <div class="jumbotron" style="padding-top: 20px; padding-bottom: 11px">
+                        <div class="form-group">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    @Html.Label("name", "Party Name: ", htmlAttributes: new { @class = "control-label" })
+                                </div>
+                                <div class="col-md-8">
+                                    @Html.DropDownListFor(model => model.PARTYID, listPartyName, "-Select-", htmlAttributes: new { @class = "form-control" })
+                                    @Html.ValidationMessageFor(model => model.PARTYID, "", new { @class = "text-danger" })
+                                </div>
+                            </div>
+                            <br />
+                            <div class="row">
+                                <div class="col-md-3">
+                                    @Html.Label("name", "Job Year: ", htmlAttributes: new { @class = "control-label" })
+                                </div>
+                                <div class="col-md-2">
+                                    @Html.TextBoxFor(model => model.JOBYY, htmlAttributes: new { @class = "form-control", id = "idyear" })
+                                    @Html.ValidationMessageFor(model => model.JOBYY, "", new { @class = "text-danger" })
+                                </div>
+                                <div class="col-md-4"><br /></div>
+                                <div class="col-md-2">
+                                    <input type="submit" class="btn btn-primary btn-block" value="Print" name="command" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2"></div>
+            </div>
+        </div>*@
+
+
+        <script type="text/javascript">
+
+            $("#idyear").datepicker({
+                format: "yyyy", // Notice the Extra space at the beginning
+                viewMode: "years",
+                minViewMode: "years"
+            });
+        </script>
+}
+<script src="~/Scripts/jquery-1.9.1.min.js"></script>

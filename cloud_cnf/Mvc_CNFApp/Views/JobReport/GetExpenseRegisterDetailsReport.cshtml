@@ -1,0 +1,263 @@
+﻿@using System.Activities.Expressions
+@using System.Text.RegularExpressions
+@using Microsoft.SqlServer.Server
+@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.PageModel
+
+@{
+    Layout = null;
+    var LoggedCompId = Model.ACnfJobexp.COMPID;
+    Int64 compid = Convert.ToInt64(LoggedCompId);
+
+    string companyName = "", address = "", contactNo = "";
+    CnfDbContext db = new CnfDbContext();
+    var SelectCompanyName = from n in db.AslCompanyDbSet
+
+                            where n.COMPID == compid
+                            select new { n.COMPNM, n.ADDRESS, n.CONTACTNO };
+
+    foreach (var n in SelectCompanyName)
+    {
+        companyName = n.COMPNM;
+        address = n.ADDRESS;
+        contactNo = n.CONTACTNO;
+    }
+    var compNm = companyName;
+    var Address = address;
+    var contactno = contactNo;
+
+    var fromDate = Model.FromDate;
+    string date1 = fromDate.ToString();
+    DateTime datefrom1 = DateTime.Parse(date1);
+    string FromDate = datefrom1.ToString("dd-MMM-yyyy");
+
+    var toDate = Model.ToDate;
+    string date2 = toDate.ToString();
+    DateTime datefrom2 = DateTime.Parse(date2);
+    string ToDate = datefrom2.ToString("dd-MMM-yyyy");
+
+
+    TimeZoneInfo timeZoneInfo;
+    timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Central Asia Standard Time");
+    DateTime currentDateTime = TimeZoneInfo.ConvertTime(DateTime.Now, timeZoneInfo);
+
+
+    Decimal GrandTotal = 0;
+}
+
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <link href="~/Content/reportcss/style.css" rel="stylesheet" />
+    @*<script type="text/javascript">
+            function ClosePrint() {
+                var print = document.getElementById("print");
+                print.style.visibility = "hidden";
+                //            print.display = false;
+
+                window.print();
+            }
+        </script>*@
+
+</head>
+
+<body style=" background-color:#fafafa;">
+    @*<input id="print" tabindex="1" type="button" value="Print" onclick="ClosePrint()" />*@
+
+    <div style="width: 960px; margin: 0px auto; border: 1px solid #d3d3d3; border-radius: 5px; box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); background: none repeat scroll 0 0 white;">
+    <table id="mainTable" border="0" width="100%">
+        <thead>
+            <tr>
+                <td width="5%"></td>
+                <td width="5%"></td>
+                <td width="5%"></td>
+                <td width="5%"></td>
+                <td width="10%"></td>
+                <td width="5%"></td>
+                <td width="5%"></td>
+                <td width="5%"></td>
+                <td width="5%"></td>
+                <td width="5%"></td>
+                <td width="5%"></td>
+                <td width="5%"></td>
+                <td width="5%"></td>
+                <td width="5%"></td>
+                <td width="5%"></td>
+                <td width="5%"></td>
+                <td width="5%"></td>
+                <td width="5%"></td>
+
+            </tr>
+            <tr style="background-color: #00689b">
+                <td colspan="12">
+                    <h3 style="color: white;padding:4px">@compNm</h3>
+                    <p style="color:white;padding-left:4px">@Address<span>  @contactno</span></p>
+                </td>
+
+                <td colspan="6" style="color: white;padding:8px" align="right">
+                    Powered By<br />Alchemy Software
+                </td>
+
+            </tr>
+
+            <tr>
+                <td colspan="12" align="left" style="padding: 4px; font-weight: bold">Expense Register Details</td>
+                <td align="right" colspan="6" style="padding:8px">Print:@currentDateTime.ToString("dd-MM-yy hh:mm tt")</td>
+            </tr>
+
+            <tr style="outline: thin solid">
+                <td colspan="5" style="padding:4px;font-weight:bold">From Date : <span style="font-weight: bold">@FromDate</span></td>
+                <td colspan="6" style="font-weight: bold"> To Date : <span style="font-weight:bold">@ToDate</span></td>
+                @{
+                    var ExpenseID = Model.AGL_acchart.ACCOUNTCD;
+                    var SearchexpenseName = from m in db.GlAcchartDbSet where m.COMPID == compid && m.ACCOUNTCD == ExpenseID select new { m.ACCOUNTNM };
+                    String expenseHead = "";
+                    foreach (var a in SearchexpenseName)
+                    {
+                        expenseHead = a.ACCOUNTNM;
+                    }
+                }
+                <td colspan="7" align="left" style="font-weight:bold">Expense Head : <span style="font-weight:bold">@expenseHead</span> </td>
+
+
+            </tr>
+
+
+
+            <tr style="background-color: #00689b; outline: thin solid">
+
+                <td colspan="3" style="color: white; padding: 4px" align="center">Date</td>
+                <td colspan="2" style="color: white; padding: 4px" align="center">Invoice No</td>
+                <td colspan="6" style="color: white; padding: 4px" align="center">Expense Name</td>
+                <td colspan="4" style="color: white; padding: 4px" align="center">Amount</td>
+                <td colspan="3" style="color: white; padding: 4px" align="center">Remarks</td>
+            </tr>
+
+        </thead>
+        <tbody>
+            @{
+                Int64 maxJobNo = Convert.ToInt64((from m in db.CnfJobexpDbSet
+                    where m.COMPID == compid && m.EXPCD == ExpenseID && m.TRANSDT >= fromDate && m.TRANSDT <= toDate
+                    group m by new { m.JOBNO, m.JOBTP, m.JOBYY } into grp
+                    select grp.Key.JOBNO).Distinct().Max());
+                Int64 minJobNO = Convert.ToInt64((from m in db.CnfJobexpmstDbSet
+                    where m.COMPID == compid && m.EXPCD == ExpenseID && m.TRANSDT >= fromDate && m.TRANSDT <= toDate
+                    group m by new { m.JOBNO, m.JOBTP, m.JOBYY } into grp
+                    select grp.Key.JOBNO).Distinct().Min());
+
+            }
+            @for (Int64 i = minJobNO; i <= maxJobNo; i++)
+            {
+                var jobNo = i;
+                var result = (from m in db.CnfJobexpDbSet
+                    where m.COMPID == compid && m.EXPCD == ExpenseID && m.TRANSDT >= fromDate && m.TRANSDT <= toDate && m.JOBNO == jobNo
+                    group m by new { m.JOBTP, m.JOBYY } into grp
+                    select new { grp.Key.JOBTP, grp.Key.JOBYY }).Distinct();
+
+
+                string jobtype = "";
+                Int64 jobYear = 0;
+                foreach (var res in result)
+                {
+                    jobtype = res.JOBTP;
+                    jobYear = Convert.ToInt64(res.JOBYY);
+
+                }
+
+                var getList = (from n in db.CnfJobexpDbSet
+                    where n.COMPID == compid && n.EXPCD == ExpenseID && n.TRANSDT >= fromDate && n.TRANSDT <= toDate
+                          && n.JOBNO == jobNo && n.JOBTP == jobtype && n.JOBYY == jobYear
+                    select n).ToList();
+                var findexpenseName = (from n in db.CnfExpenseDbSet where n.COMPID == compid select n).ToList();
+
+                if (getList.Count != 0)
+                {
+                    var sarchpartyName = from chart in db.GlAcchartDbSet
+                        join Job in db.CnfJobDbSet on chart.COMPID equals Job.COMPID
+                        where Job.COMPID==compid && Job.JOBNO == jobNo && Job.JOBTP == jobtype && Job.JOBYY == jobYear && Job.PARTYID == chart.ACCOUNTCD
+                        select new { chart.ACCOUNTNM };
+                    string partyName = "";
+                    foreach (var v in sarchpartyName)
+                    {
+                        partyName = v.ACCOUNTNM;
+                    }
+
+
+                    <tr>
+                        <td colspan="6" style="padding:4px;font-weight:bold">
+                            Job No : <span style="font-weight:bold">@jobNo | @jobtype | @jobYear</span>
+                        </td>
+
+
+                        <td colspan="12" style="font-weight:bold" align="left">
+                            Party : <span style="font-weight:bold">@partyName</span>
+                        </td>
+
+
+                    </tr>
+
+                    Decimal totalAmount = 0;
+
+                    foreach (var item in getList)
+                    {
+                        <tr style="outline:thin solid">
+                            <td colspan="3" align="center">@Html.DisplayFor(modelItem => item.TRANSDT)</td>
+                            <td colspan="2" style="font-size:small" align="center">@Html.DisplayFor(modelItem => item.TRANSNO)</td>
+                            <td colspan="6" style="font-size:small" align="center">
+                                @foreach (var y in findexpenseName)
+                                {
+                                    if (item.EXPID != null && y.EXPID == item.EXPID)
+                                    {
+                                        @Html.DisplayFor(modelItem => y.EXPNM)
+                                    }
+                                }
+                            </td>
+                            <td colspan="4" align="right">@Html.DisplayFor(modelItem => item.EXPAMT)</td>
+                            <td colspan="3">@Html.DisplayFor(modelItem => item.REMARKS)</td>
+
+                        </tr>
+                        totalAmount = totalAmount + Convert.ToDecimal(item.EXPAMT);
+                    }
+
+                    GrandTotal = GrandTotal + Convert.ToDecimal(totalAmount);
+
+
+                    <tr>
+
+                        <td align="right" colspan="11"><strong>Sub Total:</strong></td>
+                        <td align="right" colspan="4">
+                            <strong>@totalAmount</strong>
+
+                        </td>
+                        <td colspan="3"></td>
+                    </tr>
+
+
+
+                }
+            }
+            <tr>
+
+                <td align="right" colspan="11"><strong>Grand Total:</strong></td>
+                <td align="right" colspan="4">
+                    <strong>@GrandTotal</strong>
+
+                </td>
+                <td colspan="3"></td>
+            </tr>
+
+
+
+
+
+
+
+        </tbody>
+    </table>
+    </div>
+
+
+</body>
+
+</html>

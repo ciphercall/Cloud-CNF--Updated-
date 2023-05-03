@@ -1,0 +1,214 @@
+﻿@using System.Net.Mime
+@using System.Web.UI.WebControls
+@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.PageModel
+
+
+@{
+    ViewBag.Title = "GetJobWiseExpenses";
+    if (HttpContext.Current.Session["LoggedUserType"] == null)
+    {
+        Response.Redirect(Url.Action("Index", "Login"));
+    }
+
+    var LoggedUserTp = HttpContext.Current.Session["LoggedUserType"].ToString();
+    var LoggedUserStatus = HttpContext.Current.Session["LoggedUserStatus"].ToString();
+    var LoggedCompanyStatus = HttpContext.Current.Session["LoggedCompanyStatus"].ToString();
+
+    if ((LoggedUserTp == "CompanyAdmin" || LoggedUserTp == "UserAdmin" || LoggedUserTp == "User") && LoggedUserStatus == "A" && LoggedCompanyStatus == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+
+    Int64 compid = Convert.ToInt64(System.Web.HttpContext.Current.Session["loggedCompID"]);
+
+    CnfDbContext db = new CnfDbContext();
+
+    List<SelectListItem> listJobNo = new List<SelectListItem>();
+    //var resultJobNo = (from n in db.CnfJobDbSet where compid==n.COMPID select n).ToList();
+    //var resultJobNo1 = (from cnfjob in db.CnfJobDbSet
+    //                   join glacchart in db.GlAcchartDbSet on cnfjob.COMPID equals glacchart.COMPID
+    //                   where cnfjob.PARTYID == glacchart.ACCOUNTCD && cnfjob.COMPID==compid
+    //                   select new { cnfjob.JOBNO });
+
+    var resultJobNo = (from n in db.CnfJobDbSet where n.COMPID == compid select n).OrderByDescending(x=>x.JOBYY).ToList();
+
+    foreach (var n in resultJobNo)
+    {
+        if (n != null)
+        {
+            listJobNo.Add(new SelectListItem { Text = (n.JOBNO.ToString() + " | " + n.JOBYY.ToString() + " | " + n.JOBTP + " | " + n.PartyName.ToString()), Value = n.Cnf_JobID.ToString() });
+        }
+    }
+
+    //permission check
+
+    Int64 loggedUserID = Convert.ToInt64(HttpContext.Current.Session["loggedUserID"].ToString());
+
+
+    var permission_Check = from m in db.AslRoleDbSet
+                           where m.COMPID == compid && m.USERID == loggedUserID
+                               && m.CONTROLLERNAME == "JobReport" && m.ACTIONNAME == "GetJobWiseExpenses"
+                           select m;
+    var Status = "";
+    foreach (var check in permission_Check)
+    {
+        Status = check.STATUS;
+    }
+
+    if (Status == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+    
+    
+}
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    @Html.ValidationSummary(true)
+
+    @Html.HiddenFor(model => model.ACnfJob.COMPID, new { id = "txtCompId", @Value = compid })
+    @Html.HiddenFor(model => model.ACnfJob.JOBNO, new { id = "txtJOBNO" })
+    <div id="contentHeaderBox">
+        <h1 style="padding-left:16px">Job Wise Expense Report</h1>
+    </div>
+    <br />
+    <div class="col-md-12">
+        <div class="form-group">
+            <div class="row">
+                <div class="col-md-4">
+                    <span>@Html.Label("name", "Job No", htmlAttributes: new { @class = "control-label" })</span>
+                    @Html.DropDownListFor(model => model.ACnfJob.Cnf_JobID, listJobNo, "-Select-", new { @class = "form-control input-sm", id = "txtCnf_JobID",autofocus=true })
+                </div>
+                <div class="col-md-2">
+                    <span>@Html.Label("name", "Year", htmlAttributes: new { @class = "control-label" })</span>
+                    @Html.TextBoxFor(model => model.ACnfJob.JOBYY, new { @class = "form-control input-sm", id = "txtJOBYY", @readonly = "readonly" })
+                </div>
+                <div class="col-md-2">
+                    <span>@Html.Label("name", "Type", htmlAttributes: new { @class = "control-label" })</span>
+                    @Html.TextBoxFor(model => model.ACnfJob.JOBTP, new { @class = "form-control input-sm", id = "txtJOBTP", @readonly = "readonly" })
+                </div>
+                <div class="col-md-4">
+                    <span>@Html.Label("name", "Party Name", htmlAttributes: new { @class = "control-label" })</span>
+                    @Html.TextBoxFor(model => model.AGL_acchart.ACCOUNTNM, new { @class = "form-control input-sm", id = "txtPartyName", @readonly = "readonly" })
+                </div>
+            </div>
+           
+            <br />
+            <div class="row">
+                <div class="col-md-5"></div>
+                <div class="col-md-5"></div>
+                <div class="col-md-2">
+                    <span><br /></span>
+                  
+                    <input type="submit" id="submitId" class="btn btn-primary btn-block" value="Expense" formtarget="_blank" name="command"/>
+                   
+                    
+                </div>
+            </div>
+            <br/>
+            <div class="row">
+                <div class="col-md-5"></div>
+                <div class="col-md-5"></div>
+                <div class="col-md-2">
+                    <span><br /></span>
+
+                    <input type="submit" id="submitId" class="btn btn-primary btn-block" value="Receive" formtarget="_blank" name="command" />
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+    @*<div class="container">
+        <div class="row">
+            <div class="col-md-1"></div>
+            <div class="col-md-10">
+                <div class="panel panel-info" style="padding: 0px; margin-bottom: 0px;">
+                    <div class="panel-heading text-center">
+                        <h4>Job Wise Expense Report</h4>
+                    </div>
+                </div>
+
+                <div class="jumbotron" style="padding-top: 20px; padding-bottom: 11px">
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <span>@Html.Label("name", "Job No", htmlAttributes: new { @class = "control-label" })</span>
+                                @Html.DropDownListFor(model => model.ACnfJob.Cnf_JobID, listJobNo, "-Select-", new { @class = "form-control input-sm", id = "txtCnf_JobID" })
+                            </div>
+                            <div class="col-md-2">
+                                <span>@Html.Label("name", "Job Year", htmlAttributes: new { @class = "control-label" })</span>
+                                @Html.TextBoxFor(model => model.ACnfJob.JOBYY, new { @class = "form-control input-sm", id = "txtJOBYY", @readonly = "readonly" })
+                            </div>
+                            <div class="col-md-2">
+                                <span>@Html.Label("name", "Job Type", htmlAttributes: new { @class = "control-label" })</span>
+                                @Html.TextBoxFor(model => model.ACnfJob.JOBTP, new { @class = "form-control input-sm", id = "txtJOBTP", @readonly = "readonly" })
+                            </div>
+                            <div class="col-md-4">
+                                <span>@Html.Label("name", "Party Name", htmlAttributes: new { @class = "control-label" })</span>
+                                @Html.TextBoxFor(model => model.AGL_acchart.ACCOUNTNM, new { @class = "form-control input-sm", id = "txtPartyName", @readonly = "readonly" })
+                            </div>
+                        </div>
+                      
+                        <br />
+                        <div class="row">
+                            <div class="col-md-5"></div>
+                            <div class="col-md-5"></div>
+                            <div class="col-md-2">
+                                <span><br /></span>
+                                <input type="submit" id="submitId" class="btn btn-primary btn-block" value="Print" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-1"></div>
+        </div>
+    </div>*@
+
+
+    <script type="text/javascript">
+
+        $('#txtCnf_JobID').change(function () {
+            //When the UserName (Dropdown list) changed then get the "User ID" from "ASLUSERCO" table
+            var changedtxt = $('#txtCnf_JobID').val();
+
+            var txtJOBYY = document.getElementById('txtJOBYY');
+            var txtJOBTP = document.getElementById('txtJOBTP');
+            var txtPartyName = document.getElementById('txtPartyName');
+            var txtJOBNO = document.getElementById('txtJOBNO');
+
+            $.getJSON(
+                "/JobReport/JobNOChanged", { "Changedtxt": changedtxt },
+                function (myData) {
+                    txtJOBYY.value = myData.JOBYY;
+                    txtJOBTP.value = myData.JOBTP;
+                    txtJOBNO.value = myData.JOBNO;
+                    txtPartyName.value = myData.PARTYNM;
+                    document.getElementById("submitId").focus();
+                });
+
+            $('#txtJOBYY').val("");
+            $('#txtJOBTP').val("");
+            $('#txtJOBNO').val("");
+            $('#txtPartyName').val("");
+        });
+    </script>
+}

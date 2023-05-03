@@ -1,0 +1,238 @@
+﻿@using System.Net.Mime
+@using System.Web.UI.WebControls
+@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.PageModel
+
+@{
+    ViewBag.Title = "JobWiseExAndBillIndex";
+
+    if (HttpContext.Current.Session["LoggedUserType"] == null)
+    {
+        Response.Redirect(Url.Action("Index", "Login"));
+    }
+
+    var LoggedUserTp = HttpContext.Current.Session["LoggedUserType"].ToString();
+    var LoggedUserStatus = HttpContext.Current.Session["LoggedUserStatus"].ToString();
+    var LoggedCompanyStatus = HttpContext.Current.Session["LoggedCompanyStatus"].ToString();
+
+    if ((LoggedUserTp == "CompanyAdmin" || LoggedUserTp == "UserAdmin" || LoggedUserTp == "User") && LoggedUserStatus == "A" && LoggedCompanyStatus == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+
+    Int64 compid = Convert.ToInt64(System.Web.HttpContext.Current.Session["loggedCompID"]);
+
+    CnfDbContext db = new CnfDbContext();
+    List<SelectListItem> listtype = new List<SelectListItem>();
+    listtype.Add(new SelectListItem { Text = "EXPORT", Value = "EXPORT" });
+    listtype.Add(new SelectListItem { Text = "IMPORT", Value = "IMPORT" });
+
+
+
+    TimeZoneInfo timeZoneInfo;
+    timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Central Asia Standard Time");
+    DateTime currentDateTime = TimeZoneInfo.ConvertTime(DateTime.Now, timeZoneInfo);
+
+    //permission check
+
+    Int64 loggedUserID = Convert.ToInt64(HttpContext.Current.Session["loggedUserID"].ToString());
+
+
+    var permission_Check = from m in db.AslRoleDbSet
+                           where m.COMPID == compid && m.USERID == loggedUserID
+                               && m.CONTROLLERNAME == "JobReport" && m.ACTIONNAME == "JobWiseExAndBillIndex"
+                           select m;
+    var Status = "";
+    foreach (var check in permission_Check)
+    {
+        Status = check.STATUS;
+    }
+
+    if (Status == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+
+
+    List<SelectListItem> listparty = new List<SelectListItem>();
+    var search_partyname = (from n in db.CnfPartyDbSet where n.COMPID == compid select n).ToList();
+    foreach(var ssteam in search_partyname)
+    {
+        listparty.Add(new SelectListItem { Text = ssteam.PARTYNM, Value = Convert.ToString(ssteam.PARTYID)});
+    }
+  
+ 
+
+    
+}
+
+
+<link href="~/Content/bootstrap_datepicker_css/datepicker.css" rel="stylesheet" />
+<link href="~/Content/bootstrap_datepicker_css/datepicker3.css" rel="stylesheet" />
+
+<script src="~/Scripts/bootstrap-datepicker.js"></script>
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    @Html.ValidationSummary(true)
+
+    @Html.HiddenFor(model => model.ACnfJobexpmst.COMPID, new { id = "txtCompId", @Value = compid })
+
+    <div id="contentHeaderBox">
+        <h1 style="padding-left:16px">Job Wise Expense & Bill Status</h1>
+    </div>
+    <br />
+     <div class="col-md-12">
+         <div class="form-group">
+             <div class="row">
+                 <div class="col-md-3">
+                     <span>@Html.Label("name", "Type", htmlAttributes: new { @class = "control-label" })</span>
+                     @Html.DropDownListFor(model => model.ACnfJob.JOBTP, listtype, "-Select-", new { @class = "form-control input-sm", id = "txtjobtp", autofocus = true })
+                 </div>
+                 
+                 <div class="col-md-1">
+                     @*<span>@Html.Label("name", "To", htmlAttributes: new { @class = "control-label" })</span>
+                    @Html.TextBoxFor(model => model.ToDate, new { @class = "form-control input-sm", id = "txtToid" })*@
+                 </div>
+                 <div class="col-md-2">
+                     <span>@Html.Label("name", "Year", htmlAttributes: new { @class = "control-label" })</span>
+                     @Html.TextBoxFor(model => model.ACnfJob.JOBYY, new { @class = "form-control input-sm", id = "txtJobYYid", @Value = currentDateTime.ToString("yyyy") })
+                 </div>
+
+                 @*<div class="col-md-1">
+
+                 </div>*@
+                 <div class="col-md-1">
+                     <span><br /></span>
+                     <input type="submit" class="btn btn-primary" value="Report" name="command" formtarget="_blank" />
+                 </div>
+                 <div class="col-md-4">
+
+                 </div>
+             </div>
+
+             <div class="row">
+                 <div class="col-md-3">
+                     <span>@Html.Label("name", "Type", htmlAttributes: new { @class = "control-label" })</span>
+                     @Html.DropDownListFor(model => model.JOBTP, listtype, "-Select-", new { @class = "form-control input-sm", id = "txtjobtp", autofocus = true })
+                 </div>
+
+                 <div class="col-md-1">
+                     @*<span>@Html.Label("name", "To", htmlAttributes: new { @class = "control-label" })</span>
+                @Html.TextBoxFor(model => model.ToDate, new { @class = "form-control input-sm", id = "txtToid" })*@
+                 </div>
+                 <div class="col-md-2">
+                     <span>@Html.Label("name", "Form", htmlAttributes: new { @class = "control-label" })</span>
+                     @Html.TextBoxFor(model => model.FromDate, new { @class = "form-control input-sm", id = "FromDate"})
+                 </div>
+                 <div class="col-md-2">
+                     <span>@Html.Label("name", "To", htmlAttributes: new { @class = "control-label" })</span>
+                     @Html.TextBoxFor(model => model.ToDate, new { @class = "form-control input-sm", id = "ToDate" })
+                 </div>
+                 @*<div class="col-md-1">
+
+                 </div>*@
+                 <div class="col-md-1">
+                     <span><br /></span>
+                     <input type="submit" class="btn btn-primary" value="Submit" name="command" formtarget="_blank" id="2ndreport" />
+                 </div>
+                 <div class="col-md-4">
+
+                 </div>
+             </div>
+             <div class="row">
+                 <div class="col-md-3">
+                     <span>@Html.Label("name", "Party", htmlAttributes: new { @class = "control-label" })</span>
+                     @Html.DropDownListFor(model => model.ACnfParty.PARTYID, listparty, "-Select-", new { @class = "form-control input-sm", id = "" })
+                 </div>
+                 <div class="col-md-1">
+                     @*<span>@Html.Label("name", "To", htmlAttributes: new { @class = "control-label" })</span>
+            @Html.TextBoxFor(model => model.ToDate, new { @class = "form-control input-sm", id = "txtToid" })*@
+                 </div>
+                 <div class="col-md-2">
+                     <span>@Html.Label("name", "Type", htmlAttributes: new { @class = "control-label" })</span>
+                     @Html.DropDownListFor(model => model.JOBTP2, listtype, "-Select-", new { @class = "form-control input-sm", id = "txtjobtp2"})
+                 </div>
+
+                
+                 <div class="col-md-2">
+                     <span>@Html.Label("name", "Form", htmlAttributes: new { @class = "control-label" })</span>
+                     @Html.TextBoxFor(model => model.FromDate2, new { @class = "form-control input-sm", id = "FromDate2" })
+                 </div>
+                 <div class="col-md-2">
+                     <span>@Html.Label("name", "To", htmlAttributes: new { @class = "control-label" })</span>
+                     @Html.TextBoxFor(model => model.ToDate2, new { @class = "form-control input-sm", id = "ToDate2" })
+                 </div>
+                 @*<div class="col-md-1">
+
+                 </div>*@
+                 <div class="col-md-1">
+                     <span><br /></span>
+                     <input type="submit" class="btn btn-primary" value="Submit Report" name="command" formtarget="_blank" id="3rdreport" />
+                 </div>
+                
+             </div>
+         </div>
+
+
+         </div>
+    
+    
+    
+    
+  
+
+    <script type="text/javascript">
+        $('#txtJobYYid').datepicker({
+            format: " yyyy",
+            viewMode: "years",
+            minViewMode: "years",
+            autoclose:true
+
+        }).on('hide', function () {
+            //document.getElementById("txtexpnm").focus();
+        });
+        $('#FromDate').datepicker({
+            format: "dd-M-yyyy",
+            autoclose: true
+            //format: "yyyy-M-dd"
+        }).on('hide', function () {
+            document.getElementById("ToDate").focus();
+        });
+        $('#ToDate').datepicker({
+            format: "dd-M-yyyy",
+            autoclose: true
+            //format: "yyyy-M-dd"
+        }).on('hide', function () {
+            document.getElementById("2ndreport").focus();
+        });
+
+        $('#FromDate2').datepicker({
+            format: "dd-M-yyyy",
+            autoclose: true
+            //format: "yyyy-M-dd"
+        }).on('hide', function () {
+            document.getElementById("ToDate2").focus();
+        });
+        $('#ToDate2').datepicker({
+            format: "dd-M-yyyy",
+            autoclose: true
+            //format: "yyyy-M-dd"
+        }).on('hide', function () {
+            document.getElementById("3rdreport").focus();
+        });
+
+    </script>
+
+}
+
+

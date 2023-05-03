@@ -1,0 +1,682 @@
+﻿@using System.Data
+@using System.Data.SqlClient
+@using System.Web.UI.WebControls
+@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.DTO.CnfJobDetailsDTO
+
+
+@{
+    ViewBag.Title = "Index";
+    if (HttpContext.Current.Session["LoggedUserType"] == null)
+    {
+        Response.Redirect(Url.Action("Index", "Login"));
+    }
+
+    var LoggedUserTp = HttpContext.Current.Session["LoggedUserType"].ToString();
+    var LoggedUserStatus = HttpContext.Current.Session["LoggedUserStatus"].ToString();
+    var LoggedCompanyStatus = HttpContext.Current.Session["LoggedCompanyStatus"].ToString();
+
+    if ((LoggedUserTp == "CompanyAdmin" || LoggedUserTp == "UserAdmin" || LoggedUserTp == "User") && LoggedUserStatus == "A" && LoggedCompanyStatus == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+
+    var LoggedCompId = HttpContext.Current.Session["loggedCompID"].ToString();
+
+
+    TimeZoneInfo timeZoneInfo;
+    timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Central Asia Standard Time");
+    DateTime currentDateTime = TimeZoneInfo.ConvertTime(DateTime.Now, timeZoneInfo);
+
+    var createStatus = "";
+    var updateStatus = "";
+    var deleteStatus = "";
+    var status = "";
+}
+
+<link href="~/Content/bootstrap_datepicker_css/datepicker.css" rel="stylesheet" />
+
+<link href="~/Content/bootstrap_datepicker_css/datepicker3.css" rel="stylesheet" />
+
+<script src="~/Scripts/bootstrap-datepicker.js"></script>
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    @Html.ValidationSummary(true)
+
+    @Html.HiddenFor(model => model.COMPID, new { id = "txtCompId", @Value = LoggedCompId })
+
+
+
+    CnfDbContext db = new CnfDbContext();
+
+    Int64 compid = Convert.ToInt64(System.Web.HttpContext.Current.Session["loggedCompID"]);
+
+    List<SelectListItem> listJobNo = new List<SelectListItem>();
+    var resultJobNo = (from n in db.CnfJobDbSet where n.COMPID == compid select n).ToList();
+    foreach (var n in resultJobNo)
+    {
+        //CNF_JOB acCnfJob = db.CnfJobDbSet.FirstOrDefault(e => e.Cnf_JobID == n.Cnf_JobID);
+        if (n != null)
+        {
+            listJobNo.Add(new SelectListItem { Text = (n.JOBNO.ToString() + "|" + n.JOBYY.ToString() + "|" + n.JOBTP), Value = n.Cnf_JobID.ToString() });
+        }
+    }
+
+
+
+
+    <div id="contentHeaderBox">
+        <h1 style="padding-left:16px">Job  - Details</h1>
+        @if ((LoggedUserTp == "CompanyAdmin" || LoggedUserTp == "UserAdmin" || LoggedUserTp == "User") && LoggedUserStatus == "A")
+        {
+
+            var loggedUserID = HttpContext.Current.Session["loggedUserID"].ToString();
+            System.Data.SqlClient.SqlConnection conn = new System.Data.SqlClient.SqlConnection(System.Configuration.ConfigurationManager.ConnectionStrings["CnfDbContext"].ToString());
+
+            string query1 = string.Format("SELECT STATUS, INSERTR, UPDATER, DELETER FROM ASL_ROLE WHERE  CONTROLLERNAME='JobDetails' AND COMPID='{0}' AND USERID = '{1}'", compid, loggedUserID);
+
+            System.Data.SqlClient.SqlCommand cmd1 = new System.Data.SqlClient.SqlCommand(query1, conn);
+            conn.Open();
+
+            SqlDataAdapter da1 = new SqlDataAdapter(cmd1);
+            DataTable ds1 = new DataTable();
+            da1.Fill(ds1);
+
+            foreach (DataRow row in ds1.Rows)
+            {
+                status = row["STATUS"].ToString();
+                createStatus = row["INSERTR"].ToString();
+                updateStatus = row["UPDATER"].ToString();
+                deleteStatus = row["DELETER"].ToString();
+            }
+            conn.Close();
+            if (createStatus == "A")
+            {
+
+            }
+            //else if (updateStatus == "A")
+            //{
+            //    Response.Redirect("~/JobInformation/FirstPartUpdate");
+            //}
+            //else if (deleteStatus == "A")
+            //{
+            //    Response.Redirect("~/JobInformation/Delete");
+            //}
+
+
+            else if (createStatus == "I")
+            {
+                Response.Redirect(Url.Action("Index", "Logout"));
+            }
+        }
+    </div>
+    <br />
+    <div class="col-md-12">
+        <div class="form-group">
+            <div class="row">
+                <div class="col-md-2">
+                    @Html.LabelFor(model => model.JOBNO, htmlAttributes: new { @class = "control-label " })
+                </div>
+                <div class="col-md-4">
+                    @Html.DropDownListFor(model => model.JOBNO, listJobNo, "--Select--", htmlAttributes: new { id = "textidJobNo", @class = "form-control input-sm" })
+                </div>
+                @*<div class="col-md-1"></div>*@
+                <div class="col-md-1">
+                    @*@Html.LabelFor(model => model.JOBYY, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("name", "Year", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-2">
+                    @Html.TextBoxFor(model => model.JOBYY, new { @class = "form-control input-sm", id = "textidJobYY", @readonly = "readonly" })
+                </div>
+                <div class="col-md-1">
+                    @*@Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("name", "Type", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-2">
+                    @Html.TextBoxFor(model => model.JOBTP, new { @class = "form-control input-sm", id = "textidJobTP", @readonly = "readonly" })
+                </div>
+            </div>
+            <br />
+            @Html.TextBoxFor(model => model.INSLTUDE, new { id = "latlonPos", style = "display: none;" })
+
+            <input id="lat" type="hidden" />
+            <input id="lon" type="hidden" />
+            <div class="row">
+                <div class="col-md-2">
+                    @*@Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("name", "Party Name", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-4">
+                    @Html.TextBoxFor(model => model.Partyname, new { @class = "form-control input-sm", id = "Partyname", @readonly = "readonly" })
+                </div>
+                <div class="col-md-2">
+                    @*@Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("name", "Bill Forwarding Date", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-4">
+                    @Html.TextBoxFor(model => model.BillForwardingDate, new { @class = "form-control input-sm", id = "BillForwardingDate", @readonly = "readonly" })
+                </div>
+
+
+
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @*@Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("name", "Bill Ref", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-4">
+                    @Html.TextBoxFor(model => model.BILLREF, new { @class = "form-control input-sm", id = "BILLREF" })
+                </div>
+                <div class="col-md-2">
+                    @*@Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("name", "Bill Range", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-4">
+                    @Html.TextBoxFor(model => model.BILLRANGE, new { @class = "form-control input-sm", id = "BILLRANGE" })
+                </div>
+
+
+
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @*@Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("name", "Shipping Bill Bank Payment", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-4">
+                    @Html.TextBoxFor(model => model.SBANKPAY, new { @class = "form-control input-sm", id = "SBANKPAY" })
+                </div>
+                <div class="col-md-2">
+                    @*@Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("name", "Labor Charges", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-4">
+                    @Html.TextBoxFor(model => model.LABORCHG, new { @class = "form-control input-sm", id = "LABORCHG" })
+                </div>
+
+
+
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @*@Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("name", "Short Shipment Charges", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-4">
+                    @Html.TextBoxFor(model => model.SSHIPCHG, new { @class = "form-control input-sm", id = "SSHIPCHG" })
+                </div>
+                <div class="col-md-2">
+                    @*@Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("name", "Transport Charges", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-4">
+                    @Html.TextBoxFor(model => model.TRANSCHG, new { @class = "form-control input-sm", id = "TRANSCHG" })
+                </div>
+
+
+
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @*@Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("name", "Hanger/ Misc. Charges", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-4">
+                    @Html.TextBoxFor(model => model.HMISCCHG, new { @class = "form-control input-sm", id = "HMISCCHG" })
+                </div>
+                <div class="col-md-2">
+                    @*@Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("name", "Receiptable Charges", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-4">
+                    @Html.TextBoxFor(model => model.RECPTCHG, new { @class = "form-control input-sm", id = "RECPTCHG" })
+                </div>
+
+
+
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @*@Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("name", "Other Charges", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-4">
+                    @Html.TextBoxFor(model => model.OTHERCHG, new { @class = "form-control input-sm", id = "OTHERCHG" })
+                </div>
+                <div class="col-md-2">
+                    @*@Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("name", "Demurrage Charges", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-4">
+                    @Html.TextBoxFor(model => model.DEMURCHG, new { @class = "form-control input-sm", id = "DEMURCHG" })
+                </div>
+
+
+
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @*@Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("name", "Docs Process Cost", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-4">
+                    @Html.TextBoxFor(model => model.DOCPCOST, new { @class = "form-control input-sm", id = "DOCPCOST" })
+                </div>
+                <div class="col-md-2">
+                    @*@Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("name", "EP Value", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-4">
+                    @Html.TextBoxFor(model => model.EPVALUE, new { @class = "form-control input-sm", id = "EPVALUE" })
+                </div>
+
+
+
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @*@Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("name", "ITC Paid To Customs", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-4">
+                    @Html.TextBoxFor(model => model.ITCPCUST, new { @class = "form-control input-sm", id = "ITCPCUST" })
+                </div>
+                <div class="col-md-2">
+                    @*@Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("name", "ITC As Per Final Invoice Value", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-4">
+                    @Html.TextBoxFor(model => model.ITCFINVV, new { @class = "form-control input-sm", id = "ITCFINVV" })
+                </div>
+
+
+
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    @*@Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("name", "ITC To Be Paid By Employeer", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-4">
+                    @Html.TextBoxFor(model => model.ITCPEMP, new { @class = "form-control input-sm", id = "ITCPEMP" })
+                </div>
+
+                <div class="col-md-2">
+                    @*@Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                    @Html.Label("name", "Misc Cost For Reducing Imp Duty and Tax", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-4">
+                    @Html.TextBoxFor(model => model.MISCCOSTRIDT, new { @class = "form-control input-sm", id = "MISCCOSTRIDT" })
+                </div>
+
+
+
+            </div>
+            <br />
+        <div class="row">
+            <div class="col-md-2">
+                @*@Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                @Html.Label("name", "Import Duty", htmlAttributes: new {@class = "control-label"})
+            </div>
+            <div class="col-md-4">
+                @Html.TextBoxFor(model => model.IMPORTDUTY, new {@class = "form-control input-sm", id = "IMPORTDUTY"})
+            </div>
+            <div class="col-md-2">
+                @*@Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                @Html.Label("name", "Port/Container Demurrage", htmlAttributes: new {@class = "control-label"})
+            </div>
+            <div class="col-md-4">
+                @Html.TextBoxFor(model => model.PCDEMURRAGE, new {@class = "form-control input-sm", id = "PCDEMURRAGE"})
+            </div>
+           
+
+
+        </div>
+        <br/>
+        <div class="row">
+            <div class="col-md-2">
+                @*@Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                @Html.Label("name", "Rework Cost", htmlAttributes: new {@class = "control-label"})
+            </div>
+            <div class="col-md-4">
+                @Html.TextBoxFor(model => model.REWORKCOST, new {@class = "form-control input-sm", id = "REWORKCOST"})
+            </div>
+            <div class="col-md-2">
+                @*@Html.LabelFor(model => model.JOBTP, htmlAttributes: new { @class = "control-label" })*@
+                @Html.Label("name", "Special Permission Cost", htmlAttributes: new {@class = "control-label"})
+            </div>
+            <div class="col-md-4">
+                @Html.TextBoxFor(model => model.SPCOST, new {@class = "form-control input-sm", id = "SPCOST"})
+            </div>
+            
+
+
+        </div>
+        <br/>
+        <div class="row">
+            <div class="col-md-2"></div>
+            <div class="col-md-2" align="left" id="submitid">
+                <input type="submit" class="btn btn-success" value="Submit" name="command"/>
+            </div>
+
+            <div class="col-md-2" align="left" id="updateid">
+                <input type="submit" class="btn btn-success" value="Update" name="command"/>
+            </div>
+        </div>
+        </div>
+
+    </div>
+    <div class="col-md-12">
+        <hr />
+    </div>
+
+
+
+    //Latitute & longitude
+    <script src="http://maps.google.com/maps/api/js?sensor=false">
+    </script>
+
+    <script language="javascript" type="text/javascript">
+        $(function () {
+            navigator.geolocation.getCurrentPosition(showPosition);
+            //navigator.geolocation.getCurrentPosition(showPosition, positionError);
+
+            function showPosition(position) {
+                var coordinates = position.coords;
+                $("#lat").val(coordinates.latitude);
+                $("#lon").val(coordinates.longitude);
+
+                $("#latlonPos").val(
+                    $("#lat").val() + "," + $("#lon").val()
+                );
+                $("#latlonRms").val(
+                    $("#lat").val() + "," + $("#lon").val()
+                );
+            }
+        });
+    </script>
+
+
+
+
+
+
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+
+            $('#textidJobNo').val("");
+            $('#updateid').hide();
+
+            $('#txtidExpDT').datepicker({
+                format: "dd-M-yyyy",
+                autoclose: true,
+                todayHighlight: true,
+                showOnFocus: true
+
+            }).on('show', function (e) {
+                if (e.date) {
+                    $(this).data('stickyDate', e.date);
+                } else {
+                    $(this).data('stickyDate', null);
+
+                }
+            }).on('hide', function (e) {
+                var stickyDate = $(this).data('stickyDate');
+
+                if (!e.date && stickyDate) {
+                    $(this).datepicker('setDate', stickyDate);
+                    $(this).data('stickyDate', null);
+                }
+
+            });
+
+
+
+
+            $('#textidJobNo').change(function () {
+
+                var changedtxt = $('#textidJobNo').val();
+
+                var txtjobYear = document.getElementById('textidJobYY');
+                var txtjobType = document.getElementById('textidJobTP');
+                var txtBILLREF = document.getElementById('BILLREF');
+                var txtBILLRANGE = document.getElementById('BILLRANGE');
+
+                var txtPartyname = document.getElementById('Partyname');
+                var txtBillForwardingDate = document.getElementById('BillForwardingDate');
+
+                var txtSBANKPAY = document.getElementById('SBANKPAY');
+                var txtLABORCHG = document.getElementById('LABORCHG');
+                var txtSSHIPCHG = document.getElementById('SSHIPCHG');
+                var txtTRANSCHG = document.getElementById('TRANSCHG');
+                var txtHMISCCHG = document.getElementById('HMISCCHG');
+                var txtRECPTCHG = document.getElementById('RECPTCHG');
+                var txtOTHERCHG = document.getElementById('OTHERCHG');
+                var txtDEMURCHG = document.getElementById('DEMURCHG');
+                var txtDOCPCOST = document.getElementById('DOCPCOST');
+                var txtEPVALUE = document.getElementById('EPVALUE');
+                var txtITCPCUST = document.getElementById('ITCPCUST');
+                var txtITCFINVV = document.getElementById('ITCFINVV');
+                var txtITCPEMP = document.getElementById('ITCPEMP');
+
+
+                var txtMISCCOSTRIDT = document.getElementById('MISCCOSTRIDT');
+                var txtIMPORTDUTY = document.getElementById('IMPORTDUTY');
+                var txtPCDEMURRAGE = document.getElementById('PCDEMURRAGE');
+                var txtREWORKCOST = document.getElementById('REWORKCOST');
+                var txtSPCOST = document.getElementById('SPCOST');
+
+
+                $("#textidJobYY").val("");
+                $("#textidJobTP").val("");
+                $("#Partyname").val("");
+                $("#BillForwardingDate").val("");
+
+                $("#BILLREF").val("");
+                $("#BILLRANGE").val("");
+
+                $("#SBANKPAY").val("");
+                $("#LABORCHG").val("");
+                $("#SSHIPCHG").val("");
+                $("#TRANSCHG").val("");
+                $("#HMISCCHG").val("");
+                $("#RECPTCHG").val("");
+                $("#OTHERCHG").val("");
+                $("#DEMURCHG").val("");
+                $("#DOCPCOST").val("");
+                $("#EPVALUE").val("");
+                $("#ITCPCUST").val("");
+                $("#ITCFINVV").val("");
+                $("#ITCPEMP").val("");
+
+                $("#MISCCOSTRIDT").val("");
+                $("#IMPORTDUTY").val("");
+                $("#PCDEMURRAGE").val("");
+                $("#REWORKCOST").val("");
+                $("#SPCOST").val("");
+
+
+
+                $.getJSON(
+                    "/JobDetails/JobNoChanged_getJobinfo", { "Changedtxt": changedtxt },
+                    function (myData) {
+                        txtjobYear.value = myData.Year;
+                        txtjobType.value = myData.Type;
+                        txtPartyname.value = myData.Party;
+                        txtBillForwardingDate.value = myData.BillFDT;
+
+                        if (myData.Message === "Update") {
+
+
+                            txtBILLRANGE.value = myData.Billrange;
+                            txtBILLREF.value = myData.Billref;
+                            txtSBANKPAY.value = myData.Sb;
+                            txtLABORCHG.value = myData.lab;
+                            txtSSHIPCHG.value = myData.ssh;
+                            txtTRANSCHG.value = myData.tra;
+                            txtHMISCCHG.value = myData.hmi;
+                            txtRECPTCHG.value = myData.rec;
+                            txtOTHERCHG.value = myData.oth;
+                            txtDEMURCHG.value = myData.dem;
+                            txtDOCPCOST.value = myData.doc;
+                            txtEPVALUE.value = myData.epv;
+                            txtITCPCUST.value = myData.itc;
+                            txtITCFINVV.value = myData.itfin;
+                            txtITCPEMP.value = myData.itemp;
+
+                            txtMISCCOSTRIDT.value = myData.MISCCOSTRIDT;
+                            txtIMPORTDUTY.value = myData.IMPORTDUTY;
+                            txtPCDEMURRAGE.value = myData.PCDEMURRAGE;
+                            txtREWORKCOST.value = myData.REWORKCOST;
+                            txtSPCOST.value = myData.SPCOST;
+
+                            $('#updateid').show();
+                            $('#submitid').hide();
+
+                        }
+                        else {
+                            $('#submitid').show();
+                            $('#updateid').hide();
+                        }
+
+
+
+
+
+                        //$('#SearchButtonID').click();
+                    });
+
+            });
+
+
+            $('#BILLREF').autocomplete(
+            {
+                source: function (request, response) {
+
+                    var compid = $("#txtCompId").val();
+                    var jobno = $("#textidJobNo").val();
+                    var jobtp = $("#textidJobTP").val();
+                    var jobyear = $("#textidJobYY").val();
+
+                    $.ajax({
+
+                        url: '@Url.Action("TagSearch", "JobDetails")',
+                        type: 'GET',
+                        cache: false,
+                        data: { term: request.term, Compid: compid, Jobno: jobno, Jobyear: jobyear, Jobtype: jobtp },
+                        dataType: 'json',
+                        success: function (data) {
+                            response($.map(data, function (item) {
+                                return {
+                                    label: item.BILLREF,
+                                    value: item.BILLREF
+
+
+
+
+                                };
+                            }));
+                        }
+                    });
+                },
+                select: function (event, ui) {
+                    $('#BILLREF').val(ui.item.label);
+
+
+
+                    //txtOneChanged();
+
+                    //return false;
+                }
+                //change: $('#txtCostPNM').keyup(_.debounce(txtOneChanged, 100)),
+
+
+
+
+
+            });
+
+            $('#BILLRANGE').autocomplete(
+            {
+                source: function (request, response) {
+
+                    var compid = $("#txtCompId").val();
+                    var jobno = $("#textidJobNo").val();
+                    var jobtp = $("#textidJobTP").val();
+                    var jobyear = $("#textidJobYY").val();
+
+                    $.ajax({
+
+                        url: '@Url.Action("TagSearch2", "JobDetails")',
+                        type: 'GET',
+                        cache: false,
+                        data: { term: request.term, Compid: compid, Jobno: jobno, Jobyear: jobyear, Jobtype: jobtp },
+                        dataType: 'json',
+                        success: function (data) {
+                            response($.map(data, function (item) {
+                                return {
+                                    label: item.BILLRANGE,
+                                    value: item.BILLRANGE
+
+
+
+
+                                };
+                            }));
+                        }
+                    });
+                },
+                select: function (event, ui) {
+                    $('#BILLRANGE').val(ui.item.label);
+
+
+
+                    //txtOneChanged();
+
+                    //return false;
+                }
+                //change: $('#txtCostPNM').keyup(_.debounce(txtOneChanged, 100)),
+
+
+
+
+
+            });
+
+
+
+        });
+
+    </script>
+
+
+}
+
+
+
+
+<link href="~/Content/themes/base/jquery-ui.css" rel="stylesheet" />
+
+<script src="~/Scripts/jquery-1.9.1.min.js"></script>
+<script src="~/Scripts/jquery-ui-1.10.4.min.js"></script>
+
+
+<script src="~/Scripts/Underscore.js"></script>
+
+

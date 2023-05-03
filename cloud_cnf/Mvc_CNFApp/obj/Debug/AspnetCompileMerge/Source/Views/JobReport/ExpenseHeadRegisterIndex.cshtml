@@ -1,0 +1,173 @@
+﻿@using System.Net.Mime
+@using System.Web.UI.WebControls
+@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.PageModel
+
+@{
+    ViewBag.Title = "ExpenseHeadRegisterIndex";
+    if (HttpContext.Current.Session["LoggedUserType"] == null)
+    {
+        Response.Redirect(Url.Action("Index", "Login"));
+    }
+
+    var LoggedUserTp = HttpContext.Current.Session["LoggedUserType"].ToString();
+    var LoggedUserStatus = HttpContext.Current.Session["LoggedUserStatus"].ToString();
+    var LoggedCompanyStatus = HttpContext.Current.Session["LoggedCompanyStatus"].ToString();
+
+    if ((LoggedUserTp == "CompanyAdmin" || LoggedUserTp == "UserAdmin" || LoggedUserTp == "User") && LoggedUserStatus == "A" && LoggedCompanyStatus == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+
+    Int64 compid = Convert.ToInt64(System.Web.HttpContext.Current.Session["loggedCompID"]);
+    CnfDbContext db = new CnfDbContext();
+
+    List<SelectListItem> listExpenseCD = new List<SelectListItem>();
+    var resultExpenseName = (from n in db.CnfExpenseDbSet where n.COMPID == compid select n).ToList();
+
+    foreach (var n in resultExpenseName)
+    {
+        if (n != null)
+        {
+            listExpenseCD.Add(new SelectListItem { Text = (n.EXPNM), Value = n.EXPID.ToString() });
+        }
+    }
+
+
+    TimeZoneInfo timeZoneInfo;
+    timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Central Asia Standard Time");
+    DateTime currentDateTime = TimeZoneInfo.ConvertTime(DateTime.Now, timeZoneInfo);
+
+
+    //permission check
+
+    Int64 loggedUserID = Convert.ToInt64(HttpContext.Current.Session["loggedUserID"].ToString());
+
+
+    var permission_Check = from m in db.AslRoleDbSet
+                           where m.COMPID == compid && m.USERID == loggedUserID
+                               && m.CONTROLLERNAME == "JobReport" && m.ACTIONNAME == "ExpenseHeadRegisterIndex"
+                           select m;
+    var Status = "";
+    foreach (var check in permission_Check)
+    {
+        Status = check.STATUS;
+    }
+
+    if (Status == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+
+}
+
+<link href="~/Content/bootstrap%20datepicker%20css/datepicker.css" rel="stylesheet" />
+<link href="~/Content/bootstrap%20datepicker%20css/datepicker3.css" rel="stylesheet" />
+
+<script src="~/Scripts/bootstrap-datepicker.js"></script>
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    @Html.ValidationSummary(true)
+
+    @Html.HiddenFor(model => model.ACnfJobexpmst.COMPID, new { id = "txtCompId", @Value = compid })
+    
+    <div id="contentHeaderBox">
+        <h1 style="padding-left:16px">Expense/Bill Register</h1>
+    </div>
+    <br />
+     <div class="col-md-12">
+         <div class="form-group">
+             <div class="row">
+
+                 <div class="col-md-2">
+                     <span>@Html.Label("name", "From", htmlAttributes: new { @class = "control-label" })</span>
+                     @Html.TextBoxFor(model => model.FromDate, new { @class = "form-control input-sm", id = "txtFormid", @Value = currentDateTime.ToString("dd-MMM-yyyy"), autofocus = true })
+                 </div>
+
+                 <div class="col-md-2">
+                     <span>@Html.Label("name", "To", htmlAttributes: new { @class = "control-label" })</span>
+                     @Html.TextBoxFor(model => model.ToDate, new { @class = "form-control input-sm", id = "txtToid", @Value = currentDateTime.ToString("dd-MMM-yyyy") })
+                 </div>
+                 <div class="col-md-3">
+                     <span>@Html.Label("name", "Expense Head", htmlAttributes: new { @class = "control-label" })</span>
+                     @Html.DropDownListFor(model => model.AcCnfExpense.EXPNM, listExpenseCD, "-Select-", new { @class = "form-control input-sm", id = "txtexpnm" })
+                 </div>
+                 <div class="col-md-1">
+
+                 </div>
+                 <div class="col-md-1">
+                     <span><br /></span>
+                     <input type="submit" class="btn btn-primary" value="Report" name="command" formtarget="_blank" />
+                 </div>
+                 <div class="col-md-3">
+
+                 </div>
+             </div>
+             <div class="row">
+                 
+                 <div class="col-md-2">
+                    
+                 </div>
+
+                 <div class="col-md-2">
+                   
+                 </div>
+                 <div class="col-md-3">
+                     <span>@Html.Label("name", "Bill Head", htmlAttributes: new { @class = "control-label" })</span>
+                     @Html.DropDownListFor(model => model.EXPNM, listExpenseCD, "-Select-", new { @class = "form-control input-sm", id = "txtexpnm" })
+                 </div>
+                 <div class="col-md-1">
+
+                 </div>
+                 <div class="col-md-1">
+                     <span><br /></span>
+                     <input type="submit" class="btn btn-primary" value="Bill Report" name="command" formtarget="_blank" />
+                 </div>
+                 <div class="col-md-3">
+
+                 </div>
+             </div>
+            
+
+         </div>
+
+
+         </div>
+    
+    
+    
+    
+
+   
+
+    <script type="text/javascript">
+        $('#txtFormid').datepicker({
+            format: "dd-M-yyyy",
+            autoclose:true
+            //format: "yyyy-M-dd"
+        }).on('hide', function () {
+            document.getElementById("txtToid").focus();
+        });
+        
+        $('#txtToid').datepicker({
+            format: "dd-M-yyyy",
+            autoclose: true
+            //format: "yyyy-M-dd"
+        }).on('hide', function () {
+            document.getElementById("txtexpnm").focus();
+        });
+    </script>
+
+}
+
+

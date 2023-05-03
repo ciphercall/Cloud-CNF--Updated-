@@ -1,0 +1,213 @@
+﻿@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.PageModel
+@{
+    Layout = null;
+    var LoggedCompId = Model.ACnfJobexpmst.COMPID;
+    Int64 compid = Convert.ToInt64(LoggedCompId);
+
+
+    string companyName = "", address = "", contactNo = "";
+    CnfDbContext db = new CnfDbContext();
+    var SelectCompanyName = from n in db.AslCompanyDbSet
+
+                            where n.COMPID == compid
+                            select new { n.COMPNM, n.ADDRESS, n.CONTACTNO };
+
+    foreach (var n in SelectCompanyName)
+    {
+        companyName = n.COMPNM;
+        address = n.ADDRESS;
+        contactNo = n.CONTACTNO;
+    }
+    var compNm = companyName;
+    var Address = address;
+    var contactno = contactNo;
+
+    DateTime fdate = Convert.ToDateTime(Model.FromDate);
+    string ddt = fdate.ToString("dd-MMM-yyyy");
+    var fromdate = ddt;
+
+    DateTime tDate = Convert.ToDateTime(Model.ToDate);
+    string tdd = tDate.ToString("dd-MMM-yyyy");
+    var todate = tdd;
+
+    var expnm = Model.AcCnfExpense.EXPNM;
+    Int64 expid = Convert.ToInt64(expnm);
+    var SelectExpName = from n in db.CnfExpenseDbSet where n.COMPID == compid && n.EXPID == expid select new { n.EXPNM };
+    string expenseName = "";
+    foreach (var n in SelectExpName)
+    {
+        expenseName = n.EXPNM;
+    }
+
+    var EXPname = expenseName;
+
+
+    TimeZoneInfo timeZoneInfo;
+    timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Central Asia Standard Time");
+    DateTime currentDateTime = TimeZoneInfo.ConvertTime(DateTime.Now, timeZoneInfo);
+
+    string amount = "";
+    string AmtConv = "";
+    Decimal totalAmount = 0;
+    
+}
+
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <link href="~/Content/reportcss/style.css" rel="stylesheet" />
+    @*<script type="text/javascript">
+            function ClosePrint() {
+                var print = document.getElementById("print");
+                print.style.visibility = "hidden";
+                //            print.display = false;
+
+                window.print();
+            }
+        </script>*@
+
+</head>
+
+<body style=" background-color:#fafafa;">
+
+    @*<input id="print" tabindex="1" type="button" value="Print" onclick="ClosePrint()" />*@
+    <div style="width: 960px; margin: 0px auto; border: 1px solid #d3d3d3; border-radius: 5px; box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); background: none repeat scroll 0 0 white;">
+        <table id="mainTable" border="0" width="100%">
+            <thead>
+                <tr>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="10%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+
+                </tr>
+                <tr style="background-color: #00689b">
+                    <td colspan="12">
+                        <h3 style="color: white;padding:4px">@compNm</h3>
+                        <p style="color:white;padding-left:4px">@Address<span>  @contactno</span></p>
+                    </td>
+
+                    <td colspan="6" style="color: white;padding:8px" align="right">
+                        Powered By<br />Alchemy Software
+                    </td>
+
+                </tr>
+
+                <tr>
+                    <td colspan="12" align="left" style="padding: 4px; font-weight: bold">Expense Head Register</td>
+                    <td align="right" colspan="6" style="padding:8px">Print:@currentDateTime.ToString("dd-MM-yy hh:mm tt")</td>
+                </tr>
+
+                <tr style="outline: thin solid">
+                    <td colspan="5" style="padding:4px;font-weight:bold">From Date : <span style="font-weight: bold">@fromdate</span></td>
+                    <td colspan="5" style="font-weight: bold"> To Date : <span style="font-weight:bold">@todate</span></td>
+
+                    <td colspan="8" align="left" style="font-weight:bold">Expense Head : <span style="font-weight:bold">@EXPname</span> </td>
+
+
+                </tr>
+
+
+
+
+                <tr style="background-color: #00689b; outline: thin solid">
+
+                    <td colspan="3" style="color: white; padding: 4px" align="center">Date</td>
+                    <td colspan="1" style="color: white; padding: 4px" align="center">Job No</td>
+                    <td colspan="2" style="color: white; padding: 4px" align="center">Year</td>
+                    <td colspan="2" style="color: white; padding: 4px" align="center">Type</td>
+                    <td colspan="6" style="color: white; padding: 4px" align="center">Head Particulars</td>
+                    <td colspan="4" style="color: white; padding: 4px" align="center">Expense Amount</td>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+
+
+                @{
+                    var resdata = (from n in db.CnfJobexpDbSet
+                                   where n.COMPID == compid && n.TRANSDT >= Model.FromDate &&
+                                         n.TRANSDT <= Model.ToDate && n.EXPID == expid
+                                   select n).ToList();
+
+
+                }
+                @foreach (var item in resdata)
+                {
+                    <tr style="outline:thin solid">
+
+                        <td colspan="3" align="center">
+                            @Html.DisplayFor(modelItem => item.TRANSDT)
+                        </td>
+                        @{
+                    var respartyinfo = (from n in db.GlAcchartDbSet where n.COMPID == compid && n.ACCOUNTCD == item.EXPCD select n).ToList();
+                        }
+                        <td colspan="1" align="center">
+                            @Html.DisplayFor(modelItem => item.JOBNO)
+                        </td>
+                        <td colspan="2" align="center">
+                            @Html.DisplayFor(modelItem => item.JOBYY)
+                        </td>
+                        <td colspan="2" align="center">
+                            @Html.DisplayFor(modelItem => item.JOBTP)
+                        </td>
+                        <td colspan="6" style="padding-left:5px">
+                            @foreach (var x in respartyinfo)
+                            {
+                                if (x.ACCOUNTCD == item.EXPCD && item.EXPCD != null)
+                                {
+                                    @Html.DisplayFor(modelItem => x.ACCOUNTNM)
+                                }
+                            }
+                        </td>
+                        <td colspan="4" align="right">
+                            @Html.DisplayFor(modelItem => item.EXPAMT)
+                        </td>
+                    </tr>
+                            totalAmount = totalAmount + Convert.ToDecimal(item.EXPAMT);
+                }
+
+
+                <tr>
+
+                    <td align="right" colspan="14" style="font-weight:bold">Total:</td>
+                    <td align="right" colspan="4" style="font-weight:bold">
+                        @totalAmount
+                    </td>
+                </tr>
+
+                <tr>
+                    @{
+                        amount = Convert.ToString(@totalAmount);
+                        AmtConv = SpellAmount.MoneyConvFn(amount);
+                    }
+
+
+                    <th align="left" colspan="18">
+                        In Words: @AmtConv
+                    </th>
+                </tr>
+
+            </tbody>
+        </table>
+        </div>
+</body>
+</html>

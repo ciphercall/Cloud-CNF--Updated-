@@ -1,0 +1,373 @@
+﻿@using System.Activities.Expressions
+@using System.Text.RegularExpressions
+@using DotNetOpenAuth.AspNet.Clients
+@using Microsoft.SqlServer.Server
+@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.PageModel
+
+@{
+    Layout = null;
+    var LoggedCompId = Model.ACnfJobbill.COMPID;
+    Int64 compid = Convert.ToInt64(LoggedCompId);
+
+    string companyName = "", address = "", contactNo = "";
+    CnfDbContext db = new CnfDbContext();
+    var SelectCompanyName = from n in db.AslCompanyDbSet
+
+                            where n.COMPID == compid
+                            select new { n.COMPNM, n.ADDRESS, n.CONTACTNO };
+
+    foreach (var n in SelectCompanyName)
+    {
+        companyName = n.COMPNM;
+        address = n.ADDRESS;
+        contactNo = n.CONTACTNO;
+    }
+    var compNm = companyName;
+    var Address = address;
+    var contactno = contactNo;
+
+    TimeZoneInfo timeZoneInfo;
+    timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Central Asia Standard Time");
+    DateTime currentDateTime = TimeZoneInfo.ConvertTime(DateTime.Now, timeZoneInfo);
+
+    Decimal balanceAmount = 0;
+    Decimal balanceBillamount = 0;
+    Decimal AdvanceAmount = 0;
+    Decimal NormalAmount = 0;
+    Decimal DiscountAmount = 0;
+
+}
+
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <link href="~/Content/reportcss/style.css" rel="stylesheet" />
+    @*<script type="text/javascript">
+            function ClosePrint() {
+                var print = document.getElementById("print");
+                print.style.visibility = "hidden";
+                //            print.display = false;
+
+                window.print();
+            }
+        </script>*@
+
+</head>
+
+<body style=" background-color:#fafafa;">
+
+    @*<input id="print" tabindex="1" type="button" value="Print" onclick="ClosePrint()" />*@
+    <div style="width: 960px; margin: 0px auto; border: 1px solid #d3d3d3; border-radius: 5px; box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); background: none repeat scroll 0 0 white;">
+        <table id="mainTable" border="0" width="100%">
+            <thead>
+                <tr>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="10%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+
+                </tr>
+                <tr style="background-color: #00689b">
+                    <td colspan="12">
+                        <h3 style="color: white;padding:4px">@compNm</h3>
+                        <p style="color:white;padding-left:4px">@Address<span>  @contactno</span></p>
+                    </td>
+
+                    <td colspan="6" style="color: white;padding:8px" align="right">
+                        Powered By<br />Alchemy Software
+                    </td>
+
+                </tr>
+
+                <tr>
+                    <td colspan="12" align="left" style="padding: 4px; font-weight: bold">Job Expense/Receive</td>
+                    <td align="right" colspan="6" style="padding:8px">Print:@currentDateTime.ToString("dd-MM-yy hh:mm tt")</td>
+                </tr>
+                @{
+
+                    var Bill_jobNO = Model.ACnfJobbill.JOBNO;
+                    var Bill_jobType = Model.ACnfJobbill.JOBTP;
+                    var Bill_jobYear = Model.ACnfJobbill.JOBYY;
+                    var Bill_PartyName = Model.ACnfJobbill.PARTYNM;
+                    var SearchJOBCDT = from m in db.CnfJobDbSet
+                                       where m.COMPID == compid && m.JOBNO == Bill_jobNO && m.JOBYY == Bill_jobYear
+                                       && m.JOBTP == Bill_jobType
+                                       select new { m.JOBCDT, m.BLNO, m.BLDT, m.CONSIGNEENM, m.CONSIGNEEADD, m.SUPPLIERNM, m.LCNO, m.LCDT, m.DOCINVNO, m.DOCINVDT, m.GOODS, m.PKGS, m.CNFV_USD, m.CNFV_ERT, m.ASSV_BDT, m.COMMAMT };
+                    string jobCDTdate = "", BillNO = "", billDate = "", CONSIGNEENM = "", CONSIGNEEADD = "", SUPPLIERNM = "", LCNO = "", LCDT = "", DOCINVNO = "", DOCINVDT = "", GOODS = "", PKGS = "";
+                    decimal CNFV_USD = 0, CNFV_ERT = 0, ASSV_BDT = 0, commission = 0;
+                    foreach (var a in SearchJOBCDT)
+                    {
+                        if (a.JOBCDT != null)
+                        {
+                            string x1 = a.JOBCDT.ToString();
+                            DateTime datefrom1 = DateTime.Parse(x1);
+                            jobCDTdate = datefrom1.ToString("dd-MMM-yyyy");
+                        }
+                        BillNO = a.BLNO;
+                        if (a.BLDT != null)
+                        {
+                            string x2 = a.BLDT.ToString();
+                            DateTime datefrom2 = DateTime.Parse(x2);
+                            billDate = datefrom2.ToString("dd-MMM-yyyy");
+
+                        }
+                        CONSIGNEENM = a.CONSIGNEENM;
+                        CONSIGNEEADD = a.CONSIGNEEADD;
+                        SUPPLIERNM = a.SUPPLIERNM;
+                        LCNO = a.LCNO;
+                        if (a.LCDT != null)
+                        {
+                            string x3 = a.LCDT.ToString();
+                            DateTime datefrom3 = DateTime.Parse(x3);
+                            LCDT = datefrom3.ToString("dd-MMM-yyyy");
+
+                        }
+                        DOCINVNO = a.DOCINVNO;
+                        if (a.DOCINVDT != null)
+                        {
+                            string x4 = a.DOCINVDT.ToString();
+                            DateTime datefrom4 = DateTime.Parse(x4);
+                            DOCINVDT = datefrom4.ToString("dd-MMM-yyyy");
+                        }
+                        GOODS = a.GOODS;
+                        PKGS = a.PKGS;
+                        CNFV_USD = Convert.ToDecimal(a.CNFV_USD);
+                        CNFV_ERT = Convert.ToDecimal(a.CNFV_ERT);
+                        ASSV_BDT = Convert.ToDecimal(a.ASSV_BDT);
+                        commission = Convert.ToDecimal(a.COMMAMT);
+                    }
+                }
+                <tr style="outline: thin solid">
+                    <td colspan="9" style="padding:4px;font-weight:bold">Job NO : <span style="font-weight: bold">@Bill_jobNO | @Bill_jobYear | @Bill_jobType | @Bill_PartyName</span></td>
+                    <td colspan="9" style="font-weight: bold"> Date : <span style="font-weight:bold">@jobCDTdate</span></td>
+
+                </tr>
+
+                <tr>
+                    <td colspan="9" style="padding:4px;font-size:small">Bill No : <span style="font-size:small">@BillNO</span></td>
+                    <td colspan="9" style="font-size:small"> Date : <span style="font-size:small">@billDate</span></td>
+
+                </tr>
+
+
+                <tr>
+                    <td colspan="18" style="padding:4px;font-size:small">Account : <span style="font-size:small">@CONSIGNEENM</span></td>
+
+
+                </tr>
+                <tr>
+                    <td colspan="18" style="padding:4px;font-size:small">Consignee Info : <span style="font-size:small">@CONSIGNEEADD</span></td>
+
+
+                </tr>
+                <tr>
+                    <td colspan="18" style="padding:4px;font-size:small">Supplier Name : <span style="font-size:small">@SUPPLIERNM</span></td>
+                </tr>
+                <tr>
+                    <td colspan="9" style="padding:4px;font-size:small">L/C NO : <span style="font-size:small">@LCNO</span></td>
+                    <td colspan="9" style="padding: 4px;font-size:small">Date : <span style="font-size:small">@LCDT</span></td>
+                </tr>
+
+                <tr>
+                    <td colspan="9" style="padding: 4px;font-size:small">Invoice NO : <span style="font-size:small">@DOCINVNO</span></td>
+                    <td colspan="9" style="padding: 4px;font-size:small">Date : <span style="font-size:small">@DOCINVDT</span></td>
+                </tr>
+                <tr>
+                    <td colspan="18" style="padding: 4px;font-size:small">Goods : <span style="font-size:small">@GOODS</span></td>
+                </tr>
+                <tr>
+                    <td colspan="18" style="padding: 4px;font-size:small">Packages : <span style="font-size:small">@PKGS</span></td>
+                </tr>
+                <tr>
+                    <td colspan="6" style="padding: 4px;font-size:small">Value USD : <span style="font-size:small">@CNFV_USD</span></td>
+                    <td colspan="6" style="padding: 4px;font-size:small">Exc. Rate : <span style="font-size:small">@CNFV_ERT</span></td>
+                    <td colspan="6" style="padding: 4px;font-size:small">Value TK. : <span style="font-size:small">@ASSV_BDT</span></td>
+                </tr>
+
+
+                <tr style="background-color: #00689b; outline: thin solid">
+
+                    <td colspan="5" style="color: white; padding: 4px;font-size:small" align="center">CUSTOM EXPENSE</td>
+                    <td colspan="3" style="color: white; padding: 4px;font-size:small" align="center">AMOUNT</td>
+                    <td colspan="1"></td>
+                    <td colspan="5" style="color: white; padding: 4px;font-size:small" align="center">PORT EXPENSE</td>
+                    <td colspan="4" style="color: white; padding: 4px;font-size:small" align="center">AMOUNT</td>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+                @{
+                    var getbillList = (from n in db.CnfJobbillsDbSet
+                                       where n.COMPID == compid && n.JOBNO == Bill_jobNO && n.JOBYY == Bill_jobYear
+                                       && n.JOBTP == Bill_jobType
+                                       orderby n.BILLSL
+                                       select n).ToList();
+                    var getList = (from n in db.CnfJobexpDbSet
+                                   where n.COMPID == compid && n.JOBNO == Bill_jobNO && n.JOBYY == Bill_jobYear
+                                   && n.JOBTP == Bill_jobType
+
+                                   select n).ToList();
+
+
+
+
+                }
+                @if (getList.Count != 0)
+                {
+                    <tr style="outline:thin solid">
+                        <td colspan="9">
+                            <table class="reportDetails" cellspacing="0" width="100%">
+
+                                @{
+                    Decimal totalAmount = 0;
+
+                                }
+
+                                @foreach (var item2 in getList)
+                                {
+                                    if (item2.EXPID.ToString().Substring(3, 2) == "01")
+                                    {
+                                         <tr style="outline:thin solid">
+                                        <td colspan="4" style="font-size:small;padding:4px" width="73%">
+                                            @{
+                                    var getexpname = from n in db.CnfExpenseDbSet
+                                                     where n.COMPID == compid && n.EXPID == item2.EXPID
+                                                     select new { n.EXPNM };
+                                    string expname = "";
+                                    foreach (var exp in getexpname)
+                                    {
+                                        expname = exp.EXPNM;
+                                    }
+                                            }
+                                            @expname
+                                        </td>
+                                        <td colspan="2" align="right" style="padding:2px;font-size:small" width="17%">
+                                            @Html.DisplayFor(modelItem => item2.EXPAMT)
+                                        </td>
+                                        <td colspan="3" width="10%"></td>
+                                    </tr>
+                                    totalAmount = totalAmount + Convert.ToDecimal(item2.EXPAMT);
+                                    }
+                                   
+                                }
+
+
+                            </table>
+
+                        </td>
+                        <td colspan="9">
+                            <table class="reportDetails" cellspacing="0" width="100%">
+                                @{
+                                Decimal totalAmount2 = 0;
+                                var SumAdvanceAmount = (from m in db.CnfJobrcvs
+                                                        where m.COMPID == compid && m.JOBNO == Bill_jobNO && m.JOBYY == Bill_jobYear
+                                                        && m.JOBTP == Bill_jobType && m.TRANSFOR == "ADVANCE"
+                                                        group m by new { m.JOBNO, m.JOBTP, m.JOBYY, m.TRANSFOR }
+                                                            into grp
+                                                            select new { amount = grp.Sum(x => x.AMOUNT) }).ToList();
+                                //Decimal AdvanceAmount = 0;
+                                foreach (var xxx in SumAdvanceAmount)
+                                {
+                                    AdvanceAmount = Convert.ToDecimal(xxx.amount);
+                                }
+                                }
+                                @foreach (var item in getList)
+                                {
+
+                                 if (item.EXPID.ToString().Substring(3, 2) == "02")
+                                    {
+                                         <tr style="outline:thin solid">
+                                        <td colspan="4" style="font-size:small;padding:4px" width="73%">
+                                            @{
+                                    var getexpname = from n in db.CnfExpenseDbSet
+                                                     where n.COMPID == compid && n.EXPID == item.EXPID
+                                                     select new { n.EXPNM };
+                                    string expname = "";
+                                    foreach (var exp in getexpname)
+                                    {
+                                        expname = exp.EXPNM;
+                                    }
+                                            }
+                                            @expname
+                                        </td>
+                                        <td colspan="2" align="right" style="padding:2px;font-size:small" width="17%">
+                                            @Html.DisplayFor(modelItem => item.EXPAMT)
+                                        </td>
+                                        <td colspan="3" width="10%"></td>
+                                    </tr>
+                                    totalAmount2 = totalAmount2 + Convert.ToDecimal(item.EXPAMT);
+                                    }
+
+                                }
+
+
+                            </table>
+
+                        </td>
+                    </tr>
+
+                   
+
+                    <tr>
+                        <td colspan="5" style="font-weight:bold">Total Expense(Custom):</td>
+                        <td colspan="3" style="font-weight:bold" align="right">@totalAmount</td>
+                        <td colspan="1"></td>
+                        <td colspan="5" style="font-weight:bold">Total Expense(Port):</td>
+                        <td colspan="4" style="font-weight:bold" align="right">
+                          @totalAmount2
+                        </td>
+                    </tr>
+                   decimal total = totalAmount2 + totalAmount;
+                    <tr>
+
+                        <td colspan="14" style="font-weight:bold" align="right">Total Expense:</td>
+                        <td colspan="4" style="font-weight:bold" align="right">
+                            @total
+                        </td>
+                    </tr>
+                   
+                    <tr>
+
+
+                        <td colspan="14" style="font-weight:bold" align="right">Total Advance:</td>
+                        <td colspan="4" style="font-weight:bold" align="right">
+                            @AdvanceAmount
+                        </td>
+                    </tr>
+                   
+
+                   
+
+                    
+
+                  
+
+                  
+
+                }
+
+
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>

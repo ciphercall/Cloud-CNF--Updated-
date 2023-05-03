@@ -1,0 +1,495 @@
+﻿@using Mvc_CNFApp.DataAccess
+@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.PageModel
+
+@{
+    Layout = null;
+
+    var LoggedCompId = Model.ACnfJob.COMPID;
+
+    Int64 compid = Convert.ToInt64(LoggedCompId);
+
+    string companyName = "", address = "", contactNo = "";
+
+    CnfDbContext db = new CnfDbContext();
+
+    var SelectCompanyName = from n in db.AslCompanyDbSet
+
+                            where n.COMPID == compid
+                            select new { n.COMPNM, n.ADDRESS, n.CONTACTNO };
+
+    foreach (var n in SelectCompanyName)
+    {
+        companyName = n.COMPNM;
+        address = n.ADDRESS;
+        contactNo = n.CONTACTNO;
+    }
+    var compNm = companyName;
+    var Address = address;
+    var contactno = contactNo;
+
+
+
+
+
+    TimeZoneInfo timeZoneInfo;
+    timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Central Asia Standard Time");
+    DateTime currentDateTime = TimeZoneInfo.ConvertTime(DateTime.Now, timeZoneInfo);
+
+
+    decimal opBalance = 0, totaldebit = 0, totalcredit = 0, totalbalance = 0;
+    string transno = "";
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <link href="~/Content/reportcss/style.css" rel="stylesheet" />
+</head>
+<body style=" background-color:#fafafa;">
+    <div style="width: 960px; margin: 0px auto; border: 1px solid #d3d3d3; border-radius: 5px; box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); background: none repeat scroll 0 0 white;">
+        <table id="mainTable" border="0" width="100%">
+            <thead>
+                <tr>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="10%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+
+                </tr>
+
+                <tr style="background-color: #00689b">
+                    <td colspan="12">
+                        <h3 style="color: white;padding:4px">@compNm</h3>
+                        <p style="color:white;padding-left:4px">@Address<span>  @contactno</span></p>
+                    </td>
+
+                    <td colspan="6" style="color: white;padding:8px" align="right">
+                        Powered By<br />Alchemy Software
+                    </td>
+
+                </tr>
+
+                <tr>
+                    <td colspan="12" align="left" style="padding: 4px; font-weight: bold">Job Information</td>
+                    <td align="right" colspan="6" style="padding:8px">Print:@currentDateTime.ToString("dd-MM-yy hh:mm tt")</td>
+                </tr>
+                @*<tr style="outline: thin solid">
+
+                        <td colspan="12" style="font-weight: bold;padding:4px">@partyName</td>
+
+
+                    </tr>*@
+                @*<tr style="outline: thin solid">
+                        @{
+                            string d = Convert.ToString(fromdate);
+                            DateTime fdate = DateTime.Parse(d);
+                            string ffdt = fdate.ToString("dd-MMM-yyyy");
+
+
+                            string d2 = Convert.ToString(todate);
+                            DateTime fdate2 = DateTime.Parse(d2);
+                            string ffdt2 = fdate2.ToString("dd-MMM-yyyy");
+
+                        }
+                        <td colspan="6" style="font-weight: bold;padding:4px">
+                            From : <span style="font-weight:bold">@ffdt</span>
+                        </td>
+                        <td colspan="6" style="font-weight: bold;padding:4px">
+                            To :<span style="font-weight:bold">@ffdt2</span>
+                        </td>
+
+
+                    </tr>*@
+                @*<tr style="background-color: #00689b; outline: thin solid">
+                        <td colspan="2" style="color: white; padding: 4px; font-size: small" align="center">Date</td>
+                        <td colspan="2" style="color: white; padding: 4px; font-size: small" align="center">Voucher No</td>
+                        <td colspan="8" style="color: white; padding: 4px; font-size: small" align="center">Particulars</td>
+                        <td colspan="2" style="color: white; padding: 4px; font-size: small" align="center">Debit(Tk.)</td>
+                        <td colspan="2" style="color: white; padding: 4px; font-size: small" align="center">Credit(Tk.)</td>
+                        <td colspan="2" style="color: white; padding: 4px; font-size:small" align="center">Balance(Tk.)</td>
+                    </tr>*@
+            </thead>
+            <tbody>
+                @{
+                    var jobData = (from n in db.CnfJobDbSet
+                                   where n.COMPID == Model.ACnfJob.COMPID && n.JOBNO == Model.ACnfJob.JOBNO && n.JOBTP == Model.ACnfJob.JOBTP && n.JOBYY == Model.ACnfJob.JOBYY
+                                   select n).ToList();
+                    string JobCDT = "", partyname = "", Arriavedt = "", Deliverydt = "", Cldt = "", Pcdt = "", Expdt = "", Docinvdt = "", Permitdt = "", Wfdt = "";
+
+
+                }
+
+
+                @foreach (var item in jobData)
+                {
+
+
+
+                    <tr style="outline:thin solid">
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small;font-weight:bold">Job No </td>
+                        <td colspan="3" align="left" style="padding-left: 4px; font-size: small; font-weight: bold">@item.JOBNO </td>
+
+                        <td colspan="3" align="left" style="padding-left: 4px; font-size: small; font-weight: bold">Job Year </td>
+                        <td colspan="3" align="left" style="padding-left: 4px; font-size: small; font-weight: bold">@item.JOBYY </td>
+                        <td colspan="3" align="left" style="padding-left: 4px; font-size: small; font-weight: bold">Job Type </td>
+                        <td colspan="3" align="left" style="padding-left: 4px; font-size: small; font-weight: bold">@item.JOBTP </td>
+
+                    </tr>
+                    {
+                        string xx = Convert.ToString(item.JOBCDT);
+                        DateTime jobcdt = DateTime.Parse(xx);
+                        JobCDT = jobcdt.ToString("dd-MMM-yyyy");
+
+                        var partyname_search = (from n in db.CnfPartyDbSet where n.COMPID == item.COMPID && n.PARTYID == item.PARTYID select n).ToList();
+                        foreach (var x in partyname_search)
+                        {
+                            partyname = x.PARTYNM;
+                        }
+                    }
+                    <tr style="outline:thin solid">
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Created Date </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@JobCDT </td>
+
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Party Name </td>
+                        <td colspan="9" align="left" style="padding-left: 4px;font-size:small">@partyname </td>
+
+                    </tr>
+                    <tr style="outline:thin solid">
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Reg.ID </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.REGID </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Consignee Name </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.CONSIGNEENM </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Consignee Address </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.CONSIGNEEADD </td>
+                      
+
+                    </tr>
+                    <tr style="outline:thin solid">
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Supplier Name</td>
+        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.SUPPLIERNM </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Packages </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.PKGS </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Goods </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.GOODS </td>
+                      
+
+                    </tr>
+                    <tr style="outline:thin solid">
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Gross Weight</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.WTGROSS </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Net Weight </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.WTNET </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">C&F Value (USD) </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.CNFV_USD </td>
+                      
+
+                    </tr>
+                    <tr style="outline:thin solid">
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">CRF Value (USD)</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.CRFV_USD </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Exchange Rate </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.CNFV_ERT </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Exchange Type </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.CNFV_ETP </td>
+                     
+
+                    </tr>
+                    <tr style="outline:thin solid">
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">C&F Value (BDT)</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.CNFV_BDT </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Assessable Value</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.ASSV_BDT </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Commission </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.COMMAMT </td>
+                       
+                    </tr>
+                    {
+                        if (item.DOCINVDT != null)
+                        {
+                            string xx = Convert.ToString(item.DOCINVDT);
+                            DateTime docinvdt = DateTime.Parse(xx);
+                            Docinvdt = docinvdt.ToString("dd-MMM-yyyy");
+                        }
+
+                    }
+                    <tr style="outline:thin solid">
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Container No</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.CONTNO </td>
+
+                      
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Invoice No </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.DOCINVNO </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Invoice Date</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@Docinvdt </td>
+
+                    </tr>
+                    {
+                        if (item.PERMITDT != null)
+                        {
+                            string xx = Convert.ToString(item.PERMITDT);
+                            DateTime permitdt = DateTime.Parse(xx);
+                            Permitdt = permitdt.ToString("dd-MMM-yyyy");
+                        }
+
+                    }
+                    <tr style="outline:thin solid">
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Flight No</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.FLIGHTNO </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Permit No</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.PERMITNO </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Permit Date </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@Permitdt </td>
+                       
+
+                    </tr>
+                    <tr style="outline:thin solid">
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">B/E No</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.BENO </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">B/E Date</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.BEDT </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Status</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.STATUS </td>
+                       
+
+                    </tr>
+                    <tr style="outline:thin solid">
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">L/C No </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.LCNO </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">L/C Date</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.LCDT </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">CBM</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.CBM </td>
+                       
+
+                    </tr>
+                    <tr style="outline:thin solid">
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Bill No(Manual)</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.BILLNOM </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Bill Forwarding Date </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.BILLFDT </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">ETB</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.ETB </td>
+                       
+
+                    </tr>
+                    <tr style="outline:thin solid">
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">CRF No</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.CRFNO </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">CRF Date</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.CRFDT </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Shed/Depot No</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.BERTHSNO </td>
+                       
+
+                    </tr>
+                    {
+                        if (item.ARRIVEDT != null)
+                        {
+                            string xx = Convert.ToString(item.ARRIVEDT);
+                            DateTime arrivedt = DateTime.Parse(xx);
+                            Arriavedt = arrivedt.ToString("dd-MMM-yyyy");
+                        }
+                    }
+                    <tr style="outline:thin solid">
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">BL No</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.BLNO </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">BL Date</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.BLDT </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Arrival Date</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@Arriavedt </td>
+
+
+                       
+
+                    </tr>
+                    <tr style="outline:thin solid">
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">BT No</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.BTNO </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">BT Date</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.BTDT </td>
+
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Rotation No</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.ROTNO </td>
+
+                        
+
+                    </tr>
+                    <tr style="outline:thin solid">
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">LCA No</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.LCANO </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">LCA Date</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.LCADT </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Line No</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.LINENO </td>
+
+                      
+
+                    </tr>
+                    {
+                        if (item.DELIVERYDT != null)
+                        {
+                            string xx = Convert.ToString(item.DELIVERYDT);
+                            DateTime deliverydt = DateTime.Parse(xx);
+                            Deliverydt = deliverydt.ToString("dd-MMM-yyyy");
+                        }
+                    }
+                    <tr style="outline:thin solid">
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">AWB No</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.AWBNO </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">AWB Date</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.AWBDT </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Delivery Date</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@Deliverydt </td>
+
+
+
+                       
+
+                    </tr>
+                    {
+                       
+                        
+                            if (item.CLDT != null)
+                            {
+                                string xx = Convert.ToString(item.CLDT);
+                                DateTime cldt = DateTime.Parse(xx);
+                                Cldt = cldt.ToString("dd-MMM-yyyy");
+                            }
+                            if (item.WFDT != null)
+                            {
+                                string xx = Convert.ToString(item.WFDT);
+                                DateTime wfdt = DateTime.Parse(xx);
+                                Wfdt = wfdt.ToString("dd-MMM-yyyy");
+                            }
+
+                       
+
+                    }
+                    <tr style="outline:thin solid">
+                        
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">HAWB No</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.HAWBNO </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">HAWB Date</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.HAWBDT </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Common Landing Date</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@Cldt</td>
+
+
+                    
+                      
+
+                    </tr>
+                  
+                    <tr style="outline:thin solid">
+                       
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">UNDT No</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.UNDTNO </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">UNDT Date</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.UNDTDT </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Wharfent Date</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@Wfdt</td>
+
+
+                     
+                      
+
+                    </tr>
+                  
+                    <tr style="outline:thin solid">
+                       
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Mother Vessel</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.MVESSEL </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Feder Vessel</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.FVESSEL </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Marks No</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.MARKSNO </td>
+                       
+
+                    </tr>
+                    {
+                        if (item.EXPDT != null)
+                        {
+                            string xx = Convert.ToString(item.EXPDT);
+                            DateTime expdt = DateTime.Parse(xx);
+                            Expdt = expdt.ToString("dd-MMM-yyyy");
+                        }
+
+                    }
+                    <tr style="outline:thin solid">
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Exp No</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.EXPNO </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Exp Date</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@Expdt </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Part Shipment</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.PARTSHIPMENT </td>
+                       
+
+                    </tr>
+                    {
+                        if (item.PCDT != null)
+                        {
+                            string xx = Convert.ToString(item.PCDT);
+                            DateTime pcdt = DateTime.Parse(xx);
+                            Pcdt = pcdt.ToString("dd-MMM-yyyy");
+                        }
+
+                    }
+                    <tr style="outline:thin solid">
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Purchase Contract No</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.PCNO </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Purchase Contract Date</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@Pcdt </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Shipping Agent</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.SPAGNM </td>
+                     
+
+                    </tr>
+                    <tr style="outline:thin solid">
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Forwarder</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.FWAGNM </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Destination</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.DESTN </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Temparature</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.PTEMP </td>
+                        
+
+                    </tr>
+                    <tr style="outline:thin solid">
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">VAT Reg No</td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">@item.VATRNO </td>
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Cont Seal No</td>
+                        <td colspan="9" align="left" style="padding-left: 4px;font-size:small">@item.CSEALNO </td>
+                       
+
+
+                    </tr>
+                    <tr style="outline:thin solid">
+                        <td colspan="3" align="left" style="padding-left: 4px;font-size:small">Remarks</td>
+                        <td colspan="15" align="left" style="padding-left: 4px;font-size:small">@item.REMARKS </td>
+                    </tr>
+                }
+
+
+
+
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

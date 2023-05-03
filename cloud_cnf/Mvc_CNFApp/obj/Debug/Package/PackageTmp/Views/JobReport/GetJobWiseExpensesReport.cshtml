@@ -1,0 +1,300 @@
+﻿@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.PageModel
+
+@{
+    Layout = null;
+    if (HttpContext.Current.Session["LoggedUserType"] == null)
+    {
+        Response.Redirect(Url.Action("Index", "Login"));
+    }
+
+    var LoggedUserTp = HttpContext.Current.Session["LoggedUserType"].ToString();
+    var LoggedUserStatus = HttpContext.Current.Session["LoggedUserStatus"].ToString();
+    var LoggedCompanyStatus = HttpContext.Current.Session["LoggedCompanyStatus"].ToString();
+
+    if ((LoggedUserTp == "CompanyAdmin" || LoggedUserTp == "UserAdmin" || LoggedUserTp == "User") && LoggedUserStatus == "A" && LoggedCompanyStatus == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Login"));
+    }
+
+    var LoggedCompId = HttpContext.Current.Session["loggedCompID"].ToString();
+    Int64 compid = Convert.ToInt64(LoggedCompId);
+
+
+    string companyName = "", address = "", contactNo = "";
+    CnfDbContext db = new CnfDbContext();
+    var SelectCompanyName = from n in db.AslCompanyDbSet
+
+                            where n.COMPID == compid
+                            select new { n.COMPNM, n.ADDRESS, n.CONTACTNO };
+
+    foreach (var n in SelectCompanyName)
+    {
+        companyName = n.COMPNM;
+        address = n.ADDRESS;
+        contactNo = n.CONTACTNO;
+    }
+    var compNm = companyName;
+    var Address = address;
+    var contactno = contactNo;
+
+    var jobNO = Model.ACnfJob.JOBNO;
+    var jobType = Model.ACnfJob.JOBTP;
+    var jobYear = Model.ACnfJob.JOBYY;
+    var Branch = Model.ACnfJob.REGID;
+    var PartyName = Model.AGL_acchart.ACCOUNTNM;
+
+
+
+    TimeZoneInfo timeZoneInfo;
+    timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Central Asia Standard Time");
+    DateTime currentDateTime = TimeZoneInfo.ConvertTime(DateTime.Now, timeZoneInfo);
+
+    Decimal GrandTotal = 0;
+    String InWords = "";
+    String grandAmount = "";
+}
+
+
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <link href="~/Content/reportcss/style.css" rel="stylesheet" />
+    @*<script type="text/javascript">
+            function ClosePrint() {
+                var print = document.getElementById("print");
+                print.style.visibility = "hidden";
+                //            print.display = false;
+
+                window.print();
+            }
+        </script>*@
+
+</head>
+<body style=" background-color:#fafafa;">
+
+    @*<input id="print" tabindex="1" type="button" value="Print" onclick="ClosePrint()" />*@
+    <div style="width: 960px; margin: 0px auto; border: 1px solid #d3d3d3; border-radius: 5px; box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); background: none repeat scroll 0 0 white;">
+        <table id="mainTable" border="0" width="100%">
+            <thead>
+                <tr>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="10%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+                    <td width="5%"></td>
+
+                </tr>
+                <tr style="background-color: #00689b">
+                    <td colspan="12">
+                        <h3 style="color: white;padding:4px">@compNm</h3>
+                        <p style="color:white;padding-left:4px">@Address<span>  @contactno</span></p>
+                    </td>
+
+                    <td colspan="6" style="color: white;padding:8px" align="right">
+                        Powered By<br />Alchemy Software
+                    </td>
+
+                </tr>
+
+                <tr>
+                    <td colspan="12" align="left" style="padding: 4px; font-weight: bold">Job Wise Expense List</td>
+                    <td align="right" colspan="6" style="padding:8px">Print:@currentDateTime.ToString("dd-MM-yy hh:mm tt")</td>
+                </tr>
+                <tr style="outline: thin solid">
+                    <td colspan="3" style="padding:4px;font-weight:bold">Job No : <span style="font-weight: bold">@jobNO</span></td>
+
+                    <td colspan="3" align="left" style="font-weight:bold">Job Year : <span style="font-weight:bold">@jobYear</span> </td>
+                    <td colspan="4" style="font-weight: bold" align="left"> Job Type : <span style="font-weight:bold">@jobType</span></td>
+                    <td colspan="6"></td>
+
+                </tr>
+                <tr style="outline: thin solid">
+                    <td colspan="6" style="font-weight:bold;padding:4px">Party Name : <span style="font-weight:bold">@PartyName</span></td>
+
+                    <td colspan="6" style="font-weight:bold">Reg Id : <span style="font-weight:bold">@Branch</span> </td>
+                    <td colspan="6"></td>
+                </tr>
+
+                <tr style="background-color: #00689b; outline: thin solid">
+                    <td colspan="6" style="color: white; padding: 4px" align="left">Expense Name</td>
+                    <td colspan="6" style="color: white; padding: 4px" align="center">AMOUNT</td>
+                    <td colspan="6" style="color: white; padding: 4px" align="center">Remarks</td>
+
+
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    Int64 maxInvoiceNo = Convert.ToInt64((from m in db.CnfJobexpmstDbSet
+                                                          where m.COMPID == compid && m.JOBNO == jobNO && m.JOBTP == jobType
+                                                                && m.JOBYY == jobYear
+                                                          select m.TRANSNO).Max());
+                    Int64 minInvoiceNo = Convert.ToInt64((from m in db.CnfJobexpmstDbSet
+                                                          where m.COMPID == compid && m.JOBNO == jobNO && m.JOBTP == jobType
+                                                                && m.JOBYY == jobYear
+                                                          select m.TRANSNO).Min());
+                    var expenseName = (from n in db.CnfExpenseDbSet where n.COMPID == compid select n).ToList();
+
+                }
+                @for (Int64 i = minInvoiceNo; i <= maxInvoiceNo; i++)
+                {
+                    Int64 CurrentInvoiceNO = i;
+                    var cnfjobExpMst_Date = (from m in db.CnfJobexpmstDbSet
+                                             where m.COMPID == compid && m.TRANSNO == CurrentInvoiceNO && m.JOBNO == jobNO
+                                                   && m.JOBTP == jobType && m.JOBYY == jobYear
+                                             select m.TRANSDT);
+                    string DateTimes = "";
+                    foreach (var dateTime in cnfjobExpMst_Date)
+                    {
+                        string date = dateTime.ToString();
+                        DateTime MyDateTime = DateTime.Parse(date);
+                        DateTimes = MyDateTime.ToString("dd-MMM-yyyy");
+
+                    }
+                    var getList = (from m in db.CnfJobexpDbSet
+                                   where m.COMPID == compid && m.TRANSNO == CurrentInvoiceNO && m.JOBNO == jobNO && m.JOBTP == jobType
+                                         && m.JOBYY == jobYear
+                                   select m).ToList();
+
+                    if (getList.Count != 0)
+                    {
+                        <tr>
+                            <td colspan="3" style="padding:4px">
+                                <strong>Invoice No : </strong>
+                            </td>
+                            <td align="left" colspan="2">
+                                <strong>@CurrentInvoiceNO</strong>
+                            </td>
+                            <td colspan="2">
+                                <strong>Date:</strong>
+                            </td>
+                            <td align="left" colspan="2">
+                                <strong>@DateTimes</strong>
+                            </td>
+                            <td colspan="9"></td>
+                        </tr>
+
+                        Decimal totalAmount = 0;
+
+                        foreach (var item in getList)
+                        {
+                            <tr style="outline:thin solid">
+                                <td colspan="6" align="left" style="padding:4px">
+
+                                    @foreach (var x in expenseName)
+                                    {
+                                        if (x != null && item.EXPID == x.EXPID)
+                                        {
+                                            @Html.DisplayFor(model => x.EXPNM)
+                                        }
+                                    }
+
+                                </td>
+                                <td colspan="6" align="right">
+                                    @Html.DisplayFor(modelItem => item.EXPAMT)
+                                </td>
+                                <td colspan="6" align="center">
+                                    @Html.DisplayFor(modelItem => item.REMARKS)
+                                </td>
+                            </tr>
+                                    totalAmount = totalAmount + Convert.ToDecimal(item.EXPAMT);
+                        }
+
+                        GrandTotal = GrandTotal + Convert.ToDecimal(totalAmount);
+
+                        <tr style="outline:thin solid">
+                            <td colspan="8" align="right">
+                                <strong>Sub Total:</strong>
+                            </td>
+                            <td colspan="4" align="right">
+                                <strong>@totalAmount</strong>
+                            </td>
+                            <td colspan="6"></td>
+                        </tr>
+                    }
+
+
+                }
+                @{
+                    grandAmount = Convert.ToString(GrandTotal);
+                    InWords = SpellAmount.MoneyConvFn(grandAmount);
+
+                }
+                <tr>
+                    <td colspan="8" align="right"></td>
+                    <td colspan="4" align="right"></td>
+                    <td colspan="6"></td>
+                </tr>
+                <tr style="outline:thin solid">
+                    <td colspan="8" align="right">
+                        <strong>Grand Total:</strong>
+                    </td>
+                    <td colspan="4" align="right">
+                        <strong>@GrandTotal</strong>
+                    </td>
+                    <td colspan="6"></td>
+                </tr>
+                <tr>
+                    <td colspan="18" style="padding:4px">
+                        In words :
+                        <span> @InWords</span>
+                    </td>
+
+                </tr>
+
+                @for (int a = 0; a < 15; a++)
+                {
+                    <tr>
+                        <td colspan="18"></td>
+                    </tr>
+                }
+
+
+                <tr>
+                    <td colspan="1"></td>
+                    <td colspan="5">____________________________</td>
+                    <td colspan="1"></td>
+                    <td colspan="5">____________________________</td>
+                    <td colspan="1"></td>
+                    <td colspan="5">____________________________</td>
+                </tr>
+                <tr>
+                    <td colspan="18"></td>
+                </tr>
+                <tr>
+                    <td colspan="18"></td>
+                </tr>
+                <tr>
+                    <td colspan="2"></td>
+                    <td colspan="4">Prepared By</td>
+                    <td colspan="2"></td>
+                    <td colspan="4">Checked By</td>
+                    <td colspan="2"></td>
+                    <td colspan="4">Authorized By</td>
+                </tr>
+
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>

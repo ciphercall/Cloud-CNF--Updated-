@@ -1,0 +1,172 @@
+﻿@using System.Net.Mime
+@using System.Web.UI.WebControls
+@using Mvc_CNFApp.Models
+@model Mvc_CNFApp.Models.CNF_JOB
+
+
+@{
+    ViewBag.Title = "JOBRegister_JobType";
+    if (HttpContext.Current.Session["LoggedUserType"] == null)
+    {
+        Response.Redirect(Url.Action("Index", "Login"));
+    }
+
+    var LoggedUserTp = HttpContext.Current.Session["LoggedUserType"].ToString();
+    var LoggedUserStatus = HttpContext.Current.Session["LoggedUserStatus"].ToString();
+    var LoggedCompanyStatus = HttpContext.Current.Session["LoggedCompanyStatus"].ToString();
+
+    if ((LoggedUserTp == "CompanyAdmin" || LoggedUserTp == "UserAdmin" || LoggedUserTp == "User") && LoggedUserStatus == "A" && LoggedCompanyStatus == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+
+    Int64 compid = Convert.ToInt64(System.Web.HttpContext.Current.Session["loggedCompID"]);
+
+    List<SelectListItem> listJobType = new List<SelectListItem>();
+    listJobType.Add(new SelectListItem { Text = "IMPORT", Value = "IMPORT" });
+    listJobType.Add(new SelectListItem { Text = "EXPORT", Value = "EXPORT" });
+
+
+    TimeZoneInfo timeZoneInfo;
+    timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Central Asia Standard Time");
+    DateTime currentDateTime = TimeZoneInfo.ConvertTime(DateTime.Now, timeZoneInfo);
+
+    //permission check
+
+    Int64 loggedUserID = Convert.ToInt64(HttpContext.Current.Session["loggedUserID"].ToString());
+
+    CnfDbContext db = new CnfDbContext();
+    var permission_Check = from m in db.AslRoleDbSet
+                           where m.COMPID == compid && m.USERID == loggedUserID
+                               && m.CONTROLLERNAME == "JobReport" && m.ACTIONNAME == "JOBRegister_JobType"
+                           select m;
+    var Status = "";
+    foreach (var check in permission_Check)
+    {
+        Status = check.STATUS;
+    }
+
+    if (Status == "A")
+    {
+
+    }
+    else
+    {
+        Response.Redirect(Url.Action("Index", "Logout"));
+    }
+    
+    
+    
+}
+
+<link href="~/Content/bootstrap%20datepicker%20css/datepicker.css" rel="stylesheet" />
+<link href="~/Content/bootstrap%20datepicker%20css/datepicker3.css" rel="stylesheet" />
+
+<script src="~/Scripts/bootstrap-datepicker.js"></script>
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    @Html.ValidationSummary(true)
+
+    @Html.HiddenFor(model => model.COMPID, new { id = "txtCompId", @Value = compid })
+
+    <div id="contentHeaderBox">
+        <h1 style="padding-left:16px">
+            Job Register
+        </h1>
+    </div>
+    <br/>
+    
+    
+    <div class="col-md-12">
+        <div class="form-group">
+            <div class="row">
+                <div class="col-md-2">
+                    @Html.Label("name", "Job Type: ", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-3">
+                    @Html.DropDownListFor(model => model.JOBTP, listJobType, "-Select-", htmlAttributes: new { @class = "form-control",autofocus=true })
+                    @Html.ValidationMessageFor(model => model.JOBTP, "", new { @class = "text-danger" })
+                </div>
+                <div class="col-md-1"><br /></div>
+                <div class="col-md-2">
+                    @Html.Label("name", "Job Year: ", htmlAttributes: new { @class = "control-label" })
+                </div>
+                <div class="col-md-2">
+                    @Html.TextBoxFor(model => model.JOBYY, htmlAttributes: new { @class = "form-control", id = "idyear", @Value = currentDateTime.ToString("yyyy") })
+                    @Html.ValidationMessageFor(model => model.JOBYY, "", new { @class = "text-danger" })
+                </div>
+                <div class="col-md-1"><br /></div>
+                <div class="col-md-1">
+                    <input type="submit" class="btn btn-primary " value="Print" name="command" formtarget="_blank" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+
+
+
+
+
+    @*<div class="container">
+        <div class="row">
+            <div class="col-md-2"></div>
+            <div class="col-md-8">
+                <div class="panel panel-info" style="padding: 0px; margin-bottom: 0px;">
+                    <div class="panel-heading text-center">
+                        <h4>Job Register</h4>
+                    </div>
+                </div>
+
+                <div class="jumbotron" style="padding-top: 20px; padding-bottom: 11px">
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-2">
+                                @Html.Label("name", "Job Type: ", htmlAttributes: new { @class = "control-label" })
+                            </div>
+                            <div class="col-md-3">
+                                @Html.DropDownListFor(model => model.JOBTP, listJobType, "-Select-", htmlAttributes: new { @class = "form-control" })
+                                @Html.ValidationMessageFor(model => model.JOBTP, "", new { @class = "text-danger" })
+                            </div>
+                            <div class="col-md-1"><br /></div>
+                            <div class="col-md-2">
+                                @Html.Label("name", "Job Year: ", htmlAttributes: new { @class = "control-label" })
+                            </div>
+                            <div class="col-md-2">
+                                @Html.TextBoxFor(model => model.JOBYY, htmlAttributes: new { @class = "form-control", id = "idyear", @Value = currentDateTime.ToString("yyyy") })
+                                @Html.ValidationMessageFor(model => model.JOBYY, "", new { @class = "text-danger" })
+                            </div>
+                            <div class="col-md-1"><br /></div>
+                            <div class="col-md-1">
+                                <input type="submit" class="btn btn-primary " value="Print" name="command" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2"></div>
+        </div>
+    </div>*@
+
+
+    <script type="text/javascript">
+
+        $("#idyear").datepicker({
+            format: "yyyy", // Notice the Extra space at the beginning
+            viewMode: "years",
+            minViewMode: "years"
+        });
+    </script>
+}
+<script src="~/Scripts/jquery-1.9.1.min.js"></script>
